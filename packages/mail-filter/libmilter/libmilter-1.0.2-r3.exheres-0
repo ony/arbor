@@ -22,7 +22,10 @@ SLOT="0"
 PLATFORMS="~amd64 ~x86"
 MYOPTIONS=""
 
-DEPENDENCIES=""
+DEPENDENCIES="
+    build+run:
+        sys-libs/db
+"
 
 BUGS_TO="will@worrbase.com philantrop@exherbo.org"
 
