@@ -39,7 +39,7 @@ DEFAULT_SRC_PREPARE_PATCHES=(
 )
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --bindir=/usr/$(exhost --target)/sbin
+    --bindir=/usr/$(exhost --target)/bin
     --enable-warmstarts
     --with-nss-modules="files"
     --with-statedir=/run/${PN}
