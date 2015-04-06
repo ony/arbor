@@ -87,6 +87,12 @@ lesspipe_set() {
     edo sed -i -e '/^__END__/,${s/^\('"${1}"'[ \t]\+\)[yYnN]\([ \t].*\)$/\1'"${2}"'\2/}' configure
 }
 
+src_prepare() {
+    default
+
+    edo sed -i -e "s:\(\$(PREFIX)\)\(/bin\):\1/$(exhost --target)\2:g" configure
+}
+
 src_configure() {
     lesspipe_set '.*'      Y
     lesspipe_set rpmunpack N # dead and just a fallback for rpm2cpio

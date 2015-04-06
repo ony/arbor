@@ -36,14 +36,14 @@ DEPENDENCIES="
 WORK=${WORKBASE}/${PNV/-tools}dsf
 
 src_compile() {
-    option static && append-ldflags -static
-    emake -C src CC="${CC}" killall5
+    append-ldflags -static
+
+    emake -C src killall5
 }
 
 src_install() {
-    doman man/killall5.8
-
-    exeinto /sbin
+    exeinto /usr/$(exhost --target)/sbin
     doexe src/killall5
+    doman man/killall5.8
 }
 

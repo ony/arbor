@@ -23,8 +23,9 @@ DEPENDENCIES="
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --bindir=/bin
+    --bindir=/usr/$(exhost --target)/bin
     --enable-static
 )
+
 DEFAULT_SRC_CONFIGURE_OPTION_WITHS=( libedit )
 

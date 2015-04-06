@@ -31,7 +31,7 @@ src_install() {
     default
 
     alternatives+=(
-        /usr/bin/pkg-config pkgconf
+        /usr/$(exhost --target)/bin/$(exhost --target)-pkg-config pkgconf
         /usr/share/aclocal/pkg.m4 pkg_${PN}.m4
     )
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Wulf C. Krueger <philantrop@exherbo.org>
+# Copyright 2009-2015 Wulf C. Krueger <philantrop@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 
 require sourceforge [ suffix=tar.gz ] cmake [ api=2 ]
@@ -26,8 +26,6 @@ SLOT="0"
 MYOPTIONS="
         graph [[ description = [ Support for graphs using boost ] ]]
         lua [[ description = [ Support Lua plan files for imposition ] ]]
-        platform:
-            amd64
 "
 
 DEPENDENCIES="
@@ -53,10 +51,10 @@ RESTRICT="test"
 CMAKE_SRC_CONFIGURE_PARAMS=(
     -DPODOFO_BUILD_SHARED:BOOL=TRUE
     -DWANT_FONTCONFIG:BOOL=TRUE
+    -DWANT_LIB64:BOOL=FALSE
 )
 CMAKE_SRC_CONFIGURE_OPTION_WANTS=(
     "graph BOOST"
-    "platform:amd64 LIB64"
 )
 CMAKE_SRC_CONFIGURE_OPTION_DISABLE_FINDS=( LUA )
 
@@ -67,6 +65,8 @@ podofo_src_prepare() {
 
     # For the tests to succeed a path must be changed.
     edo sed -i -e "s:../../../podofo/\(test/CreationTest/CreationTest.cpp\):../../${PNV}/\1:" test/CreationTest/CreationTest.cpp
+
+    edo sed -i -e "/MANDIR/s:share/man/:/usr/share/man/:" CMakeLists.txt
 }
 
 podofo_src_test() {

@@ -2,9 +2,10 @@
 # Copyright 2008 Saleem Abdulrasool <compnerd@compnerd.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require bash-completion easy-multibuild systemd-service
+require bash-completion systemd-service
+require autotools [ supported_automake=[ 1.13 ] supported_autoconf=[ 2.5 ] ]
 
-export_exlib_phases src_prepare src_install
+export_exlib_phases src_prepare src_configure src_install
 
 SUMMARY="Common linux utilities"
 HOMEPAGE="http://git.kernel.org/?p=utils/${PN}/${PN}.git"
@@ -30,7 +31,6 @@ MYOPTIONS="
     session-management [[
         description = [ enable utmp/wtmp record updates via libutempter ]
     ]]
-    multibuild_c: 32 64
 "
 
 DEPENDENCIES="
@@ -67,22 +67,25 @@ DEPENDENCIES="
         user/uuidd
         group/uuidd
         sys-libs/glibc[>=2.10]
-        sys-libs/libcap-ng[multibuild_c:*(-)?]
-        sys-libs/ncurses[>=5.6][multibuild_c:*(-)?] [[
+        sys-libs/libcap-ng
+        sys-libs/ncurses[>=5.6] [[
             note = [ this is required as most of the tools have been converted to use ncurses ]
         ]]
-        sys-libs/pam[multibuild_c:*(-)?]
-        sys-libs/zlib[multibuild_c:*(-)?]
-        session-management? ( x11-libs/libutempter[multibuild_c:*(-)?] )
-        systemd? ( sys-apps/systemd[multibuild_c:*(-)?] )
-        udev? ( sys-apps/systemd[multibuild_c:*(-)?] )
+        sys-libs/pam
+        sys-libs/zlib
+        session-management? ( x11-libs/libutempter )
+        systemd? ( sys-apps/systemd )
+        udev? ( sys-apps/systemd )
     test:
         sys-apps/bc
 "
 
+DEFAULT_SRC_INSTALL_PARAMS=( usrsbin_execdir=/usr/$(exhost --target)/bin )
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=( HISTORY VERSION )
 
 util-linux_src_prepare() {
+    edo sed -i "s:CPPFLAGS =:& -I/usr/$(exhost --target)/include/ncurses:" Makefile.am
+
     # disable failing tests
     edo rm tests/ts/fdisk/{gpt,mbr-{non,}dos-mode,sunlabel}
     edo rm tests/ts/ipcs/limits2
@@ -93,10 +96,10 @@ util-linux_src_prepare() {
 
     option !session-management && edo rm -rf tests/ts/utmpdump
 
-    default
+    autotools_src_prepare
 }
 
-configure_one_multibuild() {
+util-linux_src_configure() {
     # Conflict Resolution:
     # - coreutils
     #   * kill
@@ -125,10 +128,9 @@ configure_one_multibuild() {
     local disabled_tools=( pylibmount runuser write )
 
     econf \
-        --libdir=/${LIBDIR} \
         --localstatedir=/run \
         --enable-colors-default \
-        --enable-fs-paths-extra=/usr/sbin \
+        --enable-fs-paths-default=/usr/$(exhost --target)/bin \
         --enable-libblkid \
         --enable-libfdisk \
         --enable-libmount \
@@ -155,14 +157,14 @@ configure_one_multibuild() {
 }
 
 util-linux_src_install() {
-    easy-multibuild_src_install
+    default
 
     keepdir /var/lib/libuuid
     edo chown uuidd:uuidd "${IMAGE}"/var/lib/libuuid
     edo chmod 2775 "${IMAGE}"/var/lib/libuuid
 
     if option systemd; then
-        insinto /usr/${LIBDIR}/tmpfiles.d
+        insinto /usr/$(exhost --target)/lib/tmpfiles.d
         hereins uuidd.conf <<EOF
 d /run/uuidd 2755 uuidd uuidd
 EOF

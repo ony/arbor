@@ -81,7 +81,7 @@ src_test() {
 src_install() {
     default
 
-    for bin in /usr/bin/gpg{,v}2; do
+    for bin in /usr/$(exhost --target)/bin/gpg{,v}2; do
         dosym ${bin} ${bin/2}
     done
 

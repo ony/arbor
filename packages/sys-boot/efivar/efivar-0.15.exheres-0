@@ -17,15 +17,14 @@ MYOPTIONS=""
 # reads and sets EFI variables
 RESTRICT="test"
 
+DEFAULT_SRC_INSTALL_PARAMS=(
+    bindir=/usr/$(exhost --target)/bin
+    libdir=/usr/$(exhost --target)/lib
+    includedir=/usr/$(exhost --target)/include
+)
+
 DEPENDENCIES="
     build+run:
         dev-libs/popt
 "
-
-src_prepare () {
-    default
-
-    edo sed  -e "/libdir/s:lib64:${LIBDIR}:" \
-        -i Make.defaults
-}
 

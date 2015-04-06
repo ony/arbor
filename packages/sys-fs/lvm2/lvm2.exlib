@@ -2,7 +2,9 @@
 # Copyright 2009-2015 Wulf C. Krueger <philantrop@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require systemd-service easy-multibuild udev-rules
+require systemd-service udev-rules
+
+export_exlib_phases src_configure src_install
 
 SUMMARY="Userspace toolset providing logical volume management facilities"
 DESCRIPTION="
@@ -24,7 +26,6 @@ MYOPTIONS="
     baselayout
     dmeventd [[ description = [ DM event daemon to monitor active mapped devices ] ]]
     fsadm [[ description = [ Utility to resize or check filesystem on a device ] ]]
-    multibuild_c: 32 64
 "
 
 UPSTREAM_RELEASE_NOTES="ftp://${BASE_URL}/pub/${PN}/WHATS_NEW"
@@ -33,19 +34,17 @@ DEPENDENCIES="
     build:
         virtual/pkg-config
     build+run:
-        sys-apps/systemd[>=205][multibuild_c:*(-)?]
-        sys-apps/util-linux[>=2.24][multibuild_c:*(-)?]
-        sys-libs/readline[multibuild_c:*(-)?]
+        sys-apps/systemd[>=205]
+        sys-apps/util-linux[>=2.24]
+        sys-libs/readline
 "
 
 # The tests are expensive, unreliable, they need write access to /dev and /etc
 # and leave stale volumes lingering around if they fail
 RESTRICT="test"
 
-configure_one_multibuild() {
+lvm2_src_configure() {
     local myconf=(
-        --exec-prefix=/
-        --libdir=/${LIBDIR}
         --enable-applib
         --enable-blkid_wiping
         --enable-cmdlib
@@ -58,9 +57,8 @@ configure_one_multibuild() {
         --with-dmeventd-pidfile=/run/dmeventd.pid
         --with-default-locking-dir=/run/lock/lvm
         --with-default-run-dir=/run/lvm
-        --with-tmpfilesdir=/usr/${LIBDIR}/tmpfiles.d
+        --with-tmpfilesdir=/usr/$(exhost --target)/lib/tmpfiles.d
         --with-udevdir="${UDEVRULESDIR}"
-        --with-usrlibdir=/usr/${LIBDIR}
         --disable-lvmetad
         --disable-nls
         --disable-selinux
@@ -75,13 +73,13 @@ configure_one_multibuild() {
 
 WORK=${WORKBASE}/LVM2.${PV}
 
-install_one_multibuild() {
+lvm2_src_install() {
     default
 
     install_systemd_files
 
     if option baselayout; then
-        insinto /${LIBDIR}/rcscripts/addons
+        insinto /usr/$(exhost --target)/lib/rcscripts/addons
         doins "${FILES}"/lvm-start.sh
         doins "${FILES}"/lvm-stop.sh
     fi

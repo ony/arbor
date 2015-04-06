@@ -1,11 +1,34 @@
-# Copyright 2008 Wulf C. Krueger
+# Copyright 2008-2015 Wulf C. Krueger
 # Distributed under the terms of the GNU General Public License v2
 
-require common-metadata
+SUMMARY="A library to access SMI MIB module definitions"
+DESCRIPTION="
+The core of the libsmi distribution is a library that allows management
+applications to access SMI MIB module definitions. On top of this library, there
+are tools to check, analyze dump, convert, and compare MIB definitions. Finally,
+the distribution contains a steadily maintained and revised archive of all IETF
+and IANA maintained standard MIB and PIB modules.
+"
+HOMEPAGE="http://www.ibr.cs.tu-bs.de/projects/${PN}/"
+DOWNLOADS="ftp://ftp.ibr.cs.tu-bs.de/pub/local/${PN}/${PNV}.tar.gz"
+
+REMOTE_IDS="freecode:${PN}"
+BUGS_TO="philantrop@exherbo.org"
+UPSTREAM_CHANGELOG="http://www.ibr.cs.tu-bs.de/projects/${PN}/ChangeLog.html"
+UPSTREAM_DOCUMENTATION="http://www.ibr.cs.tu-bs.de/projects/${PN}/doc.html"
+
+LICENCES="libsmi"
 
 SLOT="0"
 PLATFORMS="~amd64 ~x86"
 MYOPTIONS=""
+
+DEFAULT_SRC_CONFIGURE_PARAMS=(
+    --datadir=/usr/share
+    --datarootdir=/usr/share
+    --with-mibdir=/usr/share/mibs
+    --with-pibdir=/usr/share/pibs
+)
 
 src_test() {
     # These tests are simply broken.
@@ -17,7 +40,8 @@ src_test() {
 
 src_install () {
     default
+
     dodoc smi.conf-example doc/{*.txt,smi.dia,smi.dtd,smi.xsd}
-    edo find "${IMAGE}"/usr/share -type d -empty -delete
+    edo find "${IMAGE}"/usr -type d -empty -delete
 }
 

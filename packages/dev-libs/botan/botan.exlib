@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Pierre Lejeune <superheron@gmail.com>
 # Distributed under the terms of the GNU General Public License v2
 
-export_exlib_phases src_install
-
 SUMMARY="Botan, a C++ crypto library"
 DESCRIPTION="
 Botan is a BSD-licensed crypto library written in C++.
@@ -48,10 +46,17 @@ UPSTREAM_RELEASE_NOTES="${HOMEPAGE}/news/"
 
 WORK="${WORKBASE}/${MY_PNV}"
 
-DEFAULT_SRC_COMPILE_PARAMS=( CXX="${CXX}" LIB_OPT="${CXXFLAGS} -finline-functions" )
+DEFAULT_SRC_COMPILE_PARAMS=(
+    AR="${AR} crs"
+    CXX=${CXX}
+    LIB_OPT="${CXXFLAGS} -finline-functions"
+    RANLIB=${RANLIB}
+)
+DEFAULT_SRC_TEST_PARAMS=( CXX=${CXX} )
+DEFAULT_SRC_INSTALL_PARAMS=(
+    DESTDIR="${IMAGE}"/usr/$(exhost --target)
+    # configure's --docdic doesn't work below the prefix
+    DOCDIR="${IMAGE}"/usr/share/doc/${PNV}
+)
 DEFAULT_SRC_INSTALL_EXCLUDE=( readme.txt )
-
-botan_src_install() {
-    emake -j1 DESTDIR="${IMAGE}"/usr install
-}
 

@@ -1,7 +1,7 @@
 # Copyright 2011 Daniel Mierswa <impulze@impulze.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require easy-multibuild gnu [ suffix=gz ]
+require gnu [ suffix=gz ]
 
 SUMMARY="A cryptographic library that is designed to fit easily in more or less any context"
 HOMEPAGE="http://www.lysator.liu.se/~nisse/${PN}"
@@ -9,16 +9,13 @@ HOMEPAGE="http://www.lysator.liu.se/~nisse/${PN}"
 LICENCES="|| ( LGPL-2.1 LGPL-3 )"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="
-    arm_cpu_features: neon
-    multibuild_c: 32 64
-"
+MYOPTIONS="arm_cpu_features: neon"
 
 UPSTREAM_DOCUMENTATION="${HOMEPAGE}/nettle.html [[ lang = en description = manual ]]"
 
 DEPENDENCIES="
     build+run:
-        dev-libs/gmp:=[multibuild_c:*(-)?] [[ note = [ for public key algorithms ] ]]
+        dev-libs/gmp:= [[ note = [ for public key algorithms ] ]]
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
@@ -31,12 +28,12 @@ DEFAULT_SRC_CONFIGURE_OPTION_ENABLES+=( 'arm_cpu_features:neon arm-neon' )
 # configure appends -ggdb3 unconditionally and it seems to be explicitly
 # wanted by the author, check what problems arise once it's removed
 
-configure_one_multibuild()
+src_configure()
 {
+    CC_FOR_BUILD="$(exhost --build)-gcc" \
     econf \
         --enable-shared \
         --disable-openssl \
-        $(option_enable arm_cpu_features:neon arm-neon) \
-        $(multibuild_default_target C || echo --with-include-path=/usr/${CHOST}/include)
+        $(option_enable arm_cpu_features:neon arm-neon)
 }
 

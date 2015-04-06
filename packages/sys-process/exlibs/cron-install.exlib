@@ -12,11 +12,11 @@ exparam -v crontab crontab
 
 do_cron_exes() {
     exeopts -m 2755 -o root -g cron
-    exeinto /usr/bin
+    exeinto /usr/$(exhost --target)/bin
     doexe "${crontab}"
 
     exeopts -m 0750 -o root -g wheel
-    exeinto /usr/sbin
+    exeinto /usr/$(exhost --target)/bin
     doexe "${crond}"
 }
 

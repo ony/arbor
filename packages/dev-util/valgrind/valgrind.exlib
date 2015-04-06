@@ -4,7 +4,8 @@
 #     Copyright 1999-2008 Gentoo Foundation.
 
 require flag-o-matic autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.15 ] ]
-require easy-multibuild [ multiunpack=true ]
+
+export_exlib_phases src_prepare src_configure
 
 SUMMARY="An open-source memory debugger for GNU/Linux"
 HOMEPAGE="http://www.valgrind.org"
@@ -14,14 +15,14 @@ UPSTREAM_RELEASE_NOTES="${HOMEPAGE}/docs/manual/dist.news.html"
 
 LICENCES="GPL-2"
 SLOT="0"
-MYOPTIONS="multibuild_c: ( 32 64 )"
+MYOPTIONS=""
 
 DEPENDENCIES="
     build+run:
         sys-libs/glibc[>=2.2]
 "
 
-prepare_one_multibuild() {
+valgrind_src_prepare() {
     edo sed -e 's:^CFLAGS="-Wno-long-long":& $CFLAGS:' -i configure.ac
     edo sed -e "s:doc/${PN}:doc/${PNV}:" -i docs/Makefile.am
 
@@ -34,29 +35,19 @@ prepare_one_multibuild() {
     autotools_src_prepare
 }
 
-configure_one_multibuild() {
+valgrind_src_configure() {
     local myconf=()
 
     filter-flags -fomit-frame-pointer
     # -ggdb3 causes segfaults at startup
     replace-flags -ggdb3 -ggdb2
 
-    if option multibuild_c:32 && option multibuild_c:64 ; then
-        #install separate 32bit only libraries in /usr/lib32
-        #and the 64bit valgrind with support for memchecking 32bit binaries
-        if [[ "${MULTIBUILD_CLASS}${MULTIBUILD_TARGET}" == "C32" ]] ; then
-            myconf+=( --enable-only32bit )
-        else
-            myconf+=( --disable-only64bit --disable-only32bit )
-        fi
-    else
-        # only one is needed, make it explicit
-        if [[ "${MULTIBUILD_CLASS}${MULTIBUILD_TARGET}" == "C32" ]] ; then
-            myconf+=( --enable-only32bit )
-        else
+    if [[ $(exhost --target) == x86_64-pc-linux-gnu ]] ; then
             myconf+=( --enable-only64bit )
-        fi
+    else
+            myconf+=( --enable-only32bit )
     fi
+
     econf "${myconf[@]}"
 }
 

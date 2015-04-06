@@ -78,7 +78,7 @@ cronie_src_install() {
     # alternatives
     local alternatives=(
         cron ${PN} 10
-        /usr/bin/crontab ${PN}.crontab
+        /usr/$(exhost --target)/bin/crontab ${PN}.crontab
         /usr/share/man/man5/crontab.5 ${PN}.crontab.5
         /usr/share/man/man1/crontab.1 ${PN}.crontab.1
         /usr/share/man/man8/cron.8 ${PN}.cron.8

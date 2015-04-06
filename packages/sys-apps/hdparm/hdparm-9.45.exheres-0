@@ -15,6 +15,7 @@ MYOPTIONS=""
 DEPENDENCIES=""
 
 DEFAULT_SRC_COMPILE_PARAMS=( STRIP=: CC="${CC}" )
+DEFAULT_SRC_INSTALL_PARAMS=( sbindir=/usr/$(exhost --target)/bin )
 
 src_prepare() {
     default

@@ -1,0 +1,110 @@
+# Copyright 2008, 2009, 2010, 2012 Ingmar Vanhassel <ingmar@exherbo.org>
+# Copyright 2013 Wouter van Kesteren <woutershep@gmail.com>
+# Copyright 2013-2015 Wulf C. Krueger <philantrop@exherbo.org>
+# Distributed under the terms of the GNU General Public License v2
+
+MY_PNV=${PN}_${PV//./_}
+WORK=${WORKBASE}/${MY_PNV}
+
+require sourceforge
+
+export_exlib_phases src_configure src_compile src_install
+
+SUMMARY="Boost Libraries for C++"
+HOMEPAGE="http://www.${PN}.org"
+
+REMOTE_IDS+=" freecode:${PN}"
+
+UPSTREAM_CHANGELOG="${HOMEPAGE}/users/history/version_${PV//./_}.html [[ lang = en ]]"
+UPSTREAM_DOCUMENTATION="${HOMEPAGE}/doc/libs/${PV//./_} [[ lang = en ]]"
+
+LICENCES="Boost-1.0"
+SLOT="0"
+MYOPTIONS="debug doc"
+
+DEPENDENCIES="
+    build+run:
+        dev-lang/python:=
+        dev-libs/expat
+        dev-libs/icu:=
+"
+
+DEFAULT_SRC_PREPARE_PATCHES+=(
+    "${FILES}"/0001-Add-toolchain-for-our-cross-stuff.patch
+    "${FILES}"/0001-Add-toolchain-for-our-cross-stuff-part-2.patch
+)
+
+global_conf=(
+        -d+2
+        -j${EXJOBS:-1}
+        -q
+        --build-dir="${WORKBASE}"/build
+        --prefix=/usr
+        --layout=system
+        --includedir=/usr/$(exhost --target)/include
+        --libdir=/usr/$(exhost --target)/lib
+        --without-mpi
+        link=shared
+        pch=off
+        runtime-link=shared
+        threading=multi
+        toolset=cross
+)
+
+[[ -n ${CFLAGS} ]] && global_conf+=( cflags="${CFLAGS}" )
+[[ -n ${CXXFLAGS} ]] && global_conf+=( cxxflags="${CXXFLAGS}" )
+[[ -n ${LDFLAGS} ]] && global_conf+=( linkflags="${LDFLAGS}" )
+
+boost_src_configure() {
+    local bootstrap_conf=(
+        --libdir=/usr/$(exhost --target)/lib
+        --with-python=/usr/$(exhost --target)/bin/python
+        --with-toolset=cross
+    )
+
+    # Patch the patch to use the right compiler
+    edo sed -e "s:x86_64-pc-linux-gnu-\(.*\):$(exhost --target)-\1:g" \
+            -i tools/build/src/engine/build.jam \
+            -i tools/build/src/engine/build.sh \
+            -i tools/build/src/tools/cross.jam \
+            -i libs/context/build/Jamfile.v2
+
+    edo ./bootstrap.sh "${bootstrap_conf[@]}"
+}
+
+boost_src_compile() {
+    edo ./b2 "${global_conf[@]}" $(optionq debug && echo variant=debug)
+}
+
+boost_src_install() {
+    local lib
+
+    # Careful: The IMAGE-prefixed paths *must* precede global_conf
+    edo ./b2 \
+        --prefix="${IMAGE}"/usr \
+        --libdir="${IMAGE}"/usr/$(exhost --target)/lib \
+        --includedir="${IMAGE}"/usr/$(exhost --target)/include \
+        "${global_conf[@]}" \
+        install
+
+    # Install compatibility symlinks to get -mt-suffixed libs
+    edo pushd "${IMAGE}"/usr/$(exhost --target)/lib
+    for lib in *.so; do
+        dosym ${lib} /usr/$(exhost --target)/lib/${lib/.so/-mt.so}
+    done
+    edo popd
+
+    if option doc ; then
+        # FIXME Handled by the build system originally but seems to be broken
+        local f
+        edo find doc/ libs/ -depth -iname 'test' -o -iname 'src' -o -iname 'CMakeLists.txt' -o -iname '*.cmake' -o -iname 'Jamfile.v2' -o -iname 'proj' -o -iname '*.vcproj' | while read f ; do
+            edo rm -r "${f}"
+        done
+
+        insinto /usr/share/doc/${PNVR}/html
+        doins -r doc libs more
+
+        dosym /usr/$(exhost --target)/include/${PN} /usr/share/doc/${PNVR}/html/${PN}
+    fi
+}
+

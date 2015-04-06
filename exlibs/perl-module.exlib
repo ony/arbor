@@ -15,6 +15,13 @@ myexparam module_author=
 myexparam module_extension=.tar.gz
 myexparam subdir=
 
+# TODO(moben) make cross compiling perl modules actually work
+# IDEA(moben) symlink Config{.pm,_heavy.pl} to a separate directory and add that to PERL5LIB
+#             that should allow it to pick up the right directories and compiler{s,flags} to build
+#             stuff for the target arch.
+#             the line below fails because the host perl can't use the arch specific libs in there
+#export PERL5LIB=${ROOT}/usr/$(exhost --target)/lib/perl5/core_perl/5.18-arch/
+
 perl-module-metadata() {
     local module_author module_extension subdir
 
@@ -91,9 +98,9 @@ perl-module_src_install() {
         fi
     done
 
-    if [[ -d "${IMAGE}/usr/${LIBDIR}" ]] ; then
-        edo find "${IMAGE}/usr/${LIBDIR}" -type f -name .packlist -delete
-        edo find "${IMAGE}/usr/${LIBDIR}" -depth -type d -empty -delete
+    if [[ -d "${IMAGE}/usr/$(exhost --target)/lib" ]] ; then
+        edo find "${IMAGE}/usr/$(exhost --target)/lib" -type f -name .packlist -delete
+        edo find "${IMAGE}/usr/$(exhost --target)/lib" -depth -type d -empty -delete
     fi
 }
 
@@ -123,6 +130,6 @@ fixlocalpod() {
         [[ -f ${perldir}/perllocal.pod ]] && edo rm -f "${perldir}/perllocal.pod"
     done
 
-    [[ -d "${IMAGE}/usr/${LIBDIR}" ]] && edo find "${IMAGE}/usr/${LIBDIR}" -type d -empty -delete
+    [[ -d "${IMAGE}/usr/$(exhost --target)/lib" ]] && edo find "${IMAGE}/usr/$(exhost --target)/lib" -type d -empty -delete
 }
 

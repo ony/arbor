@@ -18,7 +18,7 @@ DEPENDENCIES="
     build:
         sys-devel/gettext
     build+run:
-        dev-lang/perl:*[>=5.8]
+        dev-lang/perl:=[>=5.8]
         dev-perl/Locale-gettext
 "
 
@@ -30,12 +30,6 @@ DEFAULT_SRC_PREPARE_PATCHES=(
 DEFAULT_SRC_CONFIGURE_PARAMS=(
     --enable-nls
 )
-
-src_prepare() {
-    default
-
-    edo sed -i -e 's:$Config{startperl}:#!/usr/bin/perl:' ${PN}.PL
-}
 
 src_install() {
     default

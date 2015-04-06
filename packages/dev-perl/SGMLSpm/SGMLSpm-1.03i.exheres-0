@@ -18,11 +18,11 @@ SLOT="0"
 src_prepare() {
     perlinfo
 
-    sed -e "/^BINDIR/s:=.*$:= ${IMAGE}/usr/bin/:" \
-        -e "/^HTMLDIR/s:=.*$:= ${IMAGE}/usr/share/doc/${PNVR}:" \
-        -e "/^PERL5DIR/s:=.*$:= ${IMAGE}/${VENDOR_LIB}:" \
-        -e "/^SPECDIR/s:$:/sgmlspl-specs:" \
-        -i Makefile || die "Sed to fix Makefile failed"
+    edo sed -e "/^BINDIR/s:=.*$:= ${IMAGE}/usr/$(exhost --target)/bin/:" \
+            -e "/^HTMLDIR/s:=.*$:= ${IMAGE}/usr/share/doc/${PNVR}:" \
+            -e "/^PERL5DIR/s:=.*$:= ${IMAGE}/${VENDOR_LIB}:" \
+            -e "/^SPECDIR/s:$:/sgmlspl-specs:" \
+            -i Makefile
 }
 
 src_compile() {
@@ -30,7 +30,7 @@ src_compile() {
 }
 
 src_install() {
-    dodir /usr/bin /usr/share/doc/${PNVR} ${VENDOR_LIB}/{SGMLS,sgmlspl-specs}
+    dodir /usr/$(exhost --target)/bin /usr/share/doc/${PNVR} ${VENDOR_LIB}/{SGMLS,sgmlspl-specs}
     perl-module_src_install
 }
 

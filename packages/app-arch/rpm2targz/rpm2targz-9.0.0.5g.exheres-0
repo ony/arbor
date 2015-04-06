@@ -17,3 +17,11 @@ DEPENDENCIES="
         app-arch/cpio
 "
 
+DEFAULT_SRC_CONFIGURE_PARAMS=( bindir=/usr/$(exhost --target)/bin )
+
+src_prepare() {
+    default
+
+    edo sed -i -e "s:\(bindir =\).*:\1 /usr/$(exhost --target)/bin:" Makefile
+}
+

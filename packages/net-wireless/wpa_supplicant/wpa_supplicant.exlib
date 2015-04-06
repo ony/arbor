@@ -84,7 +84,7 @@ RESTRICT="test"
 
 WORK=${WORKBASE}/${PNV}/${PN}
 
-DEFAULT_SRC_COMPILE_PARAMS+=( CC="${CC}" BINDIR=/usr/bin LIBDIR=/usr/${LIBDIR} V=1 )
+DEFAULT_SRC_COMPILE_PARAMS+=( CC="${CC}" BINDIR=/usr/$(exhost --target)/bin LIBDIR=/usr/$(exhost --target)/lib V=1 )
 
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=( eap_testing.txt wpa_supplicant.conf )
 
@@ -252,13 +252,6 @@ wpa_supplicant_src_compile() {
 
 wpa_supplicant_src_install() {
     dobin wpa_cli wpa_passphrase wpa_supplicant
-
-    # Symlinks for compatibility with baselayout-1
-    if has_version "sys-apps/baselayout[<2.0.0]" ; then
-        dodir /bin
-        dosym /usr/bin/wpa_cli /bin/wpa_cli
-        dosym /usr/bin/wpa_supplicant /sbin/wpa_supplicant
-    fi
 
     option qt4 && dobin wpa_gui-qt4/wpa_gui
 

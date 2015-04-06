@@ -26,6 +26,6 @@ scons-build_src_install() {
     setup-py_src_install
 
     # add version to shebangs
-    edo sed -i 's/python/python'"$(python_get_abi)/" "${IMAGE}"/usr/bin/*
+    edo sed -i 's/python/python'"$(python_get_abi)/" "${IMAGE}"/usr/$(exhost --target)/bin/*
 }
 

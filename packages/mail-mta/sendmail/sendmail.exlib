@@ -46,8 +46,12 @@ DEFAULT_SRC_PREPARE_PATCHES=( -p0 "${FILES}"/sendmail-delivered_hdr.patch )
 
 COMMON_SENDMAIL_INSTALL_PARAMS=(
     DESTDIR="${IMAGE}"
-    LIBDIR=/usr/${LIBDIR}
-    SHAREDLIBDIR=/usr/${LIBDIR}
+    MBINDIR=/usr/$(exhost --target)/bin
+    SBINDIR=/usr/$(exhost --target)/bin
+    UBINDIR=/usr/$(exhost --target)/bin
+    EBINDIR=/usr/$(exhost --target)/bin
+    LIBDIR=/usr/$(exhost --target)/lib
+    SHAREDLIBDIR=/usr/$(exhost --target)/lib
     MANROOT=/usr/share/man/man
     SBINOWN=root
     SBINGRP=root
@@ -77,7 +81,7 @@ sendmail_src_prepare() {
     option sasl \
         && confLIBS="${confLIBS} -lsasl2"  \
         && confENVDEF="${confENVDEF} -DSASL=2" \
-        && confCCOPTS="${confCCOPTS} -I/usr/include/sasl" \
+        && confCCOPTS="${confCCOPTS} -I/usr/$(exhost --target)/include/sasl" \
         && conf_sendmail_LIBS="${conf_sendmail_LIBS} -lsasl2"
 
     option tcpd \
@@ -106,6 +110,15 @@ sendmail_src_prepare() {
             -e "s/@@confENVDEF@@/${confENVDEF}/" \
             -e "s/@@confLIBS@@/${confLIBS}/" \
             -e "s/@@conf_sendmail_LIBS@@/${conf_sendmail_LIBS}/" \
+            -e "s:@@AR@@:$(exhost --target)-ar:" \
+            -e "s:@@CFLAGS@@:${CFLAGS}:" \
+            -e "s:@@LDFLAGS@@:${LDFLAGS}:" \
+            -e "s:@@CC@@:${CC}:" \
+            -e "s:@@LD@@:${LD}:" \
+            -e "s:@@INCLUDEDIR@@:/usr/$(exhost --target)/include:" \
+            -e "s:@@LIBDIR@@:/usr/$(exhost --target)/lib:" \
+            -e "s:@@SBINDIR@@:/usr/$(exhost --target)/bin:" \
+            -e "s:@@EBINDIR@@:/usr/$(exhost --target)/bin:" \
             "${FILES}"/site.config.m4 > "${WORK}"/devtools/Site/site.config.m4
 }
 
@@ -129,8 +142,8 @@ sendmail_src_install() {
     edo chown root:mail "${IMAGE}"/var/spool/mail
     edo chmod 0775 "${IMAGE}"/var/spool/mail
     dosym /var/spool/mail /var/mail
-    dodir /usr/bin /usr/${LIBDIR}
-    dodir /usr/share/man/man{1,5,8} /usr/sbin /usr/share/sendmail-cf
+    dodir /usr/$(exhost --target)/bin /usr/$(exhost --target)/lib
+    dodir /usr/share/man/man{1,5,8} /usr/share/sendmail-cf
     dodir /var/spool/{mqueue,clientmqueue}
     keepdir /var/spool/{clientmqueue,mqueue}
 
@@ -142,12 +155,11 @@ sendmail_src_install() {
         emake -j1 "${COMMON_SENDMAIL_INSTALL_PARAMS[@]}" force-install -C ${OBJDIR}/${dir}
     done
 
-    edo chown root:smmsp "${IMAGE}"/usr/sbin/sendmail
-    edo chmod 2555 "${IMAGE}"/usr/sbin/sendmail
+    edo chown root:smmsp "${IMAGE}"/usr/$(exhost --target)/bin/sendmail
+    edo chmod 2555 "${IMAGE}"/usr/$(exhost --target)/bin/sendmail
     edo chown smmsp:smmsp "${IMAGE}"/var/spool/clientmqueue
     edo chmod 770 "${IMAGE}"/var/spool/clientmqueue
     edo chmod 700 "${IMAGE}"/var/spool/mqueue
-    dosym /usr/sbin/makemap /usr/bin/makemap
 
     emagicdocs
     dodoc KNOWNBUGS doc/op/op.{me,ps}
@@ -194,15 +206,15 @@ sendmail_src_install() {
     keepdir /usr/adm/sm.bin
 
     # mta alternatives handling
-    edo mv "${IMAGE}"/usr/sbin/{,${PN}.}sendmail
+    edo mv "${IMAGE}"/usr/$(exhost --target)/bin/{,${PN}.}sendmail
 
-    alternatives_for mta ${PN} 5 /usr/sbin/sendmail ${PN}.sendmail
+    alternatives_for mta ${PN} 5 /usr/$(exhost --target)/bin/sendmail ${PN}.sendmail
     alternatives_for mta ${PN} 5 /etc/mail/aliases ${PN}.aliases
 
     local x
     for x in hoststat mailq newaliases purgestat; do
-        edo rm "${IMAGE}"/usr/bin/${x}
-        alternatives_for mta ${PN} 5 /usr/bin/${x} ../sbin/sendmail
+        edo rm "${IMAGE}"/usr/$(exhost --target)/bin/${x}
+        alternatives_for mta ${PN} 5 /usr/$(exhost --target)/bin/${x} ../bin/sendmail
     done
 
     for x in man1/{mailq.1,newaliases.1} man5/aliases.5; do

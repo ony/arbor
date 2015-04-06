@@ -39,7 +39,12 @@ src_unpack() {
 }
 
 src_configure() {
-    LSOF_CC="${CC}" edo ./Configure -n linux
+    # 00FAQ: ..and note that LSOF_AR must specify [..] the arguments for it
+    # glibc version test tries to execute a binary, assume our oldest glibc when cross compiling
+    LSOF_AR="${AR} cr" LSOF_CC="${CC}" LSOF_RANLIB="${RANLIB}" \
+    LINUX_CLIB="$(exhost --is-native -q || echo '-DGLIBCV=216')" \
+    LINUX_INCL="/usr/$(exhost --target)/include" \
+        edo ./Configure -n linux
 }
 
 DEFAULT_SRC_COMPILE_PARAMS=( DEBUG="" )

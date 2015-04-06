@@ -5,7 +5,7 @@
 # Based in part upon 'perl-5.8.8-r4.ebuild' from Gentoo, which is:
 #     Copyright 1999-2007 Gentoo Foundation
 
-require perl-5 [ Module_Build_pv=0.4003 ]
+require perl-5 [ Module_Build_pv=0.4003 cross_perl_ver=[ 0.9.6 ] ]
 
 PLATFORMS="~amd64 ~arm ~x86"
 

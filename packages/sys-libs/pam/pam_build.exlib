@@ -3,7 +3,7 @@
 # Based in part upon 'pam-1.0.1.ebuild' from Gentoo, which is:
 #     Copyright 1999-2008 Gentoo Foundation
 
-require flag-o-matic pam easy-multibuild
+require flag-o-matic pam autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 ] ]
 
 export_exlib_phases pkg_pretend src_prepare src_configure src_test src_install
 
@@ -24,20 +24,35 @@ LICENCES="|| ( GPL-2 BSD-3 )"
 SLOT="0"
 MYOPTIONS="
     nis [[ description = [ Network Information Service support ] ]]
-    multibuild_c: 32 64
+    parts: binaries configuration development documentation libraries
 "
 
 DEPENDENCIES="
     build:
-        sys-devel/flex[multibuild_c:*(-)?]
+        sys-devel/flex
         sys-devel/gettext
     build+run:
-        sys-libs/cracklib[>=2.8.3][multibuild_c:*(-)?]
-        nis? ( net-libs/libtirpc[multibuild_c:*(-)?] )
+        sys-libs/cracklib[>=2.8.3]
+        nis? ( net-libs/libtirpc )
 "
 
 WORK=${WORKBASE}/${MY_PNV}
 AT_M4DIR=( m4 )
+
+DEFAULT_SRC_PREPARE_PATCHES=(
+    "${FILES}"/${PN}-fix-cppflags.patch
+    "${FILES}"/${PNV}-Do-not-use-yywrap-ticket-42.patch
+)
+
+DEFAULT_SRC_CONFIGURE_PARAMS=( '--disable-audit' '--disable-prelude' '--disable-regenerate-docu'
+                               '--disable-selinux' '--enable-cracklib' '--enable-db=no'
+                               '--enable-nls'
+                               "--enable-isadir=/usr/$(exhost --target)/lib/security"
+                               "--enable-securedir=/usr/$(exhost --target)/lib/security"
+                               "--includedir=/usr/$(exhost --target)/include/security" )
+DEFAULT_SRC_CONFIGURE_OPTION_ENABLES=( nis )
+
+DEFAULT_SRC_INSTALL_EXTRA_DOCS=( doc/txt/* )
 
 pam_build_pkg_pretend() {
     if [[ ! -f /etc/pam.d/other ]]; then
@@ -53,32 +68,23 @@ pam_build_src_prepare() {
     for readme in modules/pam_*/README; do
         edo cp -f "${readme}" doc/txt/README.$(dirname "${readme}" | sed -e 's|^modules/||')
     done
-    default
-}
-
-configure_one_multibuild() {
-    # Works around an autoconf 2.62 bug; libintl.h is included before
-    # _GNU_SOURCE is defined in config.h. cf. Gentoo bug 217154.
-    append-flags -D_GNU_SOURCE
-    econf \
-        --libdir=/${LIBDIR} \
-        --disable-audit \
-        --disable-prelude \
-        --disable-regenerate-docu \
-        --disable-selinux \
-        --enable-cracklib \
-        --enable-db=no \
-        --enable-isadir=/${LIBDIR}/security \
-        --enable-nls \
-        --enable-securedir=/${LIBDIR}/security \
-        $(option_enable nis)
+    autotools_src_prepare
 }
 
 pam_build_src_configure() {
-    easy-multibuild_src_configure
+    local build=$(exhost --build)
+    local build_cflags=${build//-/_}_CFLAGS         \
+          build_cppflags=${build//-/_}_CPPFLAGS     \
+          build_ldflags=${build//-/_}_LDFLAGS
+
+    CC_FOR_BUILD="${build}-gcc"                     \
+    BUILD_CFLAGS="${!build_cflags}"                 \
+    BUILD_CPPFLAGS="${!build_cppflags}"             \
+    BUILD_LDFLAGS="${!build_ldflags}"               \
+        default
 }
 
-test_one_multibuild() {
+pam_build_src_test() {
     if [[ ! -f /etc/pam.d/other ]]; then
         ewarn "Skipping tests. You don't have /etc/pam.d/other."
     else
@@ -86,22 +92,22 @@ test_one_multibuild() {
     fi
 }
 
-pam_build_src_test() {
-    easy-multibuild_src_test
-}
-
 pam_build_src_install() {
-    easy-multibuild_src_install
+    default
 
     keepdir /etc/security/limits.d
     keepdir /etc/security/namespace.d
 
-    # Needs to be suid
-    edo chmod u+s "${IMAGE}"/sbin/unix_chkpwd
+    # NOTE(?) needs to be suid
+    edo chmod u+s "${IMAGE}/usr/$(exhost --target)/bin/unix_chkpwd"
 
-    # install the base pam configuration
+    # install base pam configuration files
     dopamd "${FILES}"/pam.d/*
 
-    dodoc doc/txt/*
+    expart binaries /usr/$(exhost --target)/bin
+    expart configuration /etc
+    expart development /usr/$(exhost --target)/include
+    expart documentation /usr/share/{doc,man}
+    expart libraries /usr/$(exhost --target)/lib
 }
 

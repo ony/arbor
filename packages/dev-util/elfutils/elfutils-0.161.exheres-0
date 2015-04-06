@@ -1,7 +1,7 @@
 # Copyright 2009, 2010 Ingmar Vanhassel
 # Distributed under the terms of the GNU General Public License v2
 
-require easy-multibuild flag-o-matic
+require flag-o-matic
 
 SUMMARY="Libraries/utilities to handle ELF objects"
 HOMEPAGE="https://fedorahosted.org/releases/${PN:0:1}/${PN:1:1}/${PN}"
@@ -12,9 +12,7 @@ BUGS_TO="philantrop@exherbo.org"
 LICENCES="GPL-3 || ( GPL-2 LGPL-3 )"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="
-    multibuild_c: 32 64
-"
+MYOPTIONS=""
 
 RESTRICT="test"
 
@@ -22,10 +20,12 @@ DEPENDENCIES="
     build:
         sys-devel/gettext[>=0.18.2]
     build+run:
-        app-arch/bzip2[multibuild_c:*(-)?]
-        app-arch/xz[multibuild_c:*(-)?]
-        sys-libs/zlib[multibuild_c:*(-)?]
-        !dev-libs/libelf
+        app-arch/bzip2
+        app-arch/xz
+        sys-libs/zlib
+        !dev-libs/libelf [[
+            description = [ installs the same headers, but the libraries are ABI incompatible ]
+        ]]
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
@@ -39,7 +39,7 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
 
 DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}"/147018e729e7c22eeabf15b82d26e4bf68a0d18e.patch )
 
-configure_one_multibuild() {
+src_configure() {
     # NOTE (abdulras) tests require that the debug information be present in the tools
     expecting_tests && append-flags -g
 

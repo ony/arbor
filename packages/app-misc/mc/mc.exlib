@@ -58,7 +58,7 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
     --disable-aspell
     --disable-werror
     --with-configdir=/etc/samba
-    --with-codepagedir=/usr/${LIBDIR}/samba/charset
+    --with-codepagedir=/usr/$(exhost --target)/lib/samba/charset
     --with-diff-viewer
     --with-edit
     --with-ext2undel
@@ -84,7 +84,7 @@ mc_src_install() {
     default
 
     # Install cons.saver setuid to make it actually work
-    edo chmod u+s "${IMAGE}"/usr/libexec/mc/cons.saver
+    edo chmod u+s "${IMAGE}"/usr/$(exhost --target)/libexec/mc/cons.saver
 
     edo find "${IMAGE}"/usr/ -type d -empty -delete
 }

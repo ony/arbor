@@ -45,7 +45,7 @@ DEFAULT_SRC_COMPILE_PARAMS=( elf )
 slang_src_install() {
     default
 
-    edo rm -r "${IMAGE}"/usr/share/doc/{slang,slsh}
+    edo rm -r "${IMAGE}"/usr/$(exhost --target)/share/
     dodoc *.txt doc/{,internal,text}/*.txt doc/slangdoc.html slsh/doc/html/*.html
     keepdir /usr/share/slsh/local-packages
 }

@@ -15,7 +15,8 @@ UPSTREAM_CHANGELOG="${DOWNLOADS/.tar.gz/-NEWS}"
 LICENCES="GPL-3"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="acl xattr"
+MYOPTIONS="acl xattr
+    parts: binaries documentation"
 
 DEPENDENCIES="
     build+run:
@@ -41,5 +42,8 @@ DEFAULT_SRC_INSTALL_EXTRA_DOCS=( OLDNEWS )
 src_install() {
     default
     install_systemd_files
+
+    expart binaries /usr/$(exhost --target)/bin
+    expart documentation /usr/share/{doc,man}
 }
 

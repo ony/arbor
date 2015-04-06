@@ -105,7 +105,7 @@ case ${PYTHON_EXLIB_API} in
         "
         fi
 
-        export PYTHON="/usr/bin/python"
+        export PYTHON="/usr/$(exhost --build)/bin/python"
 
         # Tells python not to automatically recompile modules to .pyc/.pyo even if the timestamps/version
         # stamps don't match. this is done to protect sandbox.
@@ -129,18 +129,25 @@ case ${PYTHON_EXLIB_API} in
 
             local python_abi
 
-            python_abi=$(${PYTHON} -V 2>&1)
-            python_abi=${python_abi#Python }
-            python_abi=$(ever range 1-2 ${python_abi})
+            # TODO(moben) this assumes that python == python2
+            # hopefully we have migrated everything to API=2 of this exlib until that changes
+            python_abi=$(eclectic python2 show)
 
             echo -n "${python_abi}"
+        }
+
+        # Run without arguments, returns the python include directory.
+        python_get_incdir() {
+            illegal_in_global_scope
+
+            echo -n "/usr/$(exhost --target)/include/python$(python_get_abi)"
         }
 
         # Run without arguments, returns the python library directory.
         python_get_libdir() {
             illegal_in_global_scope
 
-            echo -n "/usr/${LIBDIR}/python$(python_get_abi)"
+            echo -n "/usr/$(exhost --target)/lib/python$(python_get_abi)"
         }
 
         # Run without arguments, returns the python site-packages directory.
@@ -305,7 +312,7 @@ case ${PYTHON_EXLIB_API} in
             else
                 exparam -b 2to3 && export_exlib_phases src_prepare
 
-                export PYTHON="/usr/bin/python${PYTHON_ABIS}"
+                export PYTHON="/usr/$(exhost --build)/bin/python${PYTHON_ABIS}"
 
                 if exparam -b 2to3; then
                     python_src_prepare() {
@@ -323,7 +330,7 @@ case ${PYTHON_EXLIB_API} in
                         ( $(exparam -b with_opt && echo "${OPTION_NAME}?") ( dev-lang/python:*${PYTHON_OPTS} ) )
                 "
             fi
-            export PYTHON="/usr/bin/python"
+            export PYTHON="/usr/$(exhost --build)/bin/python"
         fi
 
         # Tells python not to automatically recompile modules to .pyc/.pyo even if the timestamps/version
@@ -353,11 +360,18 @@ case ${PYTHON_EXLIB_API} in
             fi
         }
 
+        # Run without arguments, returns the python include directory.
+        python_get_incdir() {
+            illegal_in_global_scope
+
+            echo -n "/usr/$(exhost --target)/include/python$(python_get_abi)"
+        }
+
         # Run without arguments, returns the python library directory.
         python_get_libdir() {
             illegal_in_global_scope
 
-            echo -n "/usr/${LIBDIR}/python$(python_get_abi)"
+            echo -n "/usr/$(exhost --target)/lib/python$(python_get_abi)"
         }
 
         # Run without arguments, returns the python site-packages directory.

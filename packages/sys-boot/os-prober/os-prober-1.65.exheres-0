@@ -29,22 +29,10 @@ DEPENDENCIES="
 "
 
 DEFAULT_SRC_PREPARE_PATCHES=(
-    "${FILES}"/0001-Change-libdir-all-over-the-place.patch
     "${FILES}"/0002-Add-detection-of-Exherbo-Linux.patch
 )
 
 WORK=${WORKBASE}/${PN}
-
-src_prepare() {
-    default
-
-    edo sed -e "s:WK_LIBDIR:${LIBDIR}:" \
-            -i common.sh \
-            -i linux-boot-prober \
-            -i os-prober \
-            -i linux-boot-probes/common/50mounted-tests \
-            -i os-probes/common/50mounted-tests
-}
 
 src_compile() {
     edo ${CC} ${CFLAGS} ${LDFLAGS} -o newns newns.c
@@ -53,19 +41,19 @@ src_compile() {
 src_install() {
     dobin os-prober linux-boot-prober
 
-    exeinto /usr/${LIBDIR}/os-prober
+    exeinto /usr/$(exhost --target)/lib/os-prober
     doexe newns
 
     insinto /usr/share/os-prober
     doins common.sh
 
     for dir in os-probes{,/mounted,/init} linux-boot-probes{,/mounted}; do
-        exeinto /usr/${LIBDIR}/$dir
+        exeinto /usr/$(exhost --target)/lib/$dir
         doexe $dir/common/*
         [[ -d $dir/x86 ]] && doexe $dir/x86/*
     done
 
-    exeinto /usr/${LIBDIR}/os-probes/mounted
+    exeinto /usr/$(exhost --target)/lib/os-probes/mounted
     doexe os-probes/mounted/powerpc/20macosx
 
     emagicdocs

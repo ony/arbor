@@ -63,6 +63,7 @@ src_prepare() {
 
     # Respect *FLAGS
     edo sed \
+        -e "/^TMAKE_AR[[:space:]]/s:=.*ar:= ${AR}:" \
         -e "/^TMAKE_CC[[:space:]]/s:=.*$:= ${CC}:" \
         -e "/^TMAKE_CFLAGS[[:space:]]/s:=.*$:= ${CFLAGS}:" \
         -e "/^TMAKE_CFLAGS_RELEASE[[:space:]]/s:=.*$:= :" \
@@ -71,11 +72,12 @@ src_prepare() {
         -e "/^TMAKE_CXXFLAGS[[:space:]]/s:=.*$:= ${CXXFLAGS}:" \
         -e "/^TMAKE_LFLAGS[[:space:]]/s:=.*$:= ${LDFLAGS}:" \
         -e "/^TMAKE_LFLAGS_DEBUG/s:=.*$:= :" \
+        -e "/^TMAKE_LINK[[:space:]]/s:=.*$:= ${CXX}:" \
         -i tmake/lib/linux*/tmake.conf
 
     if option qt4; then
         # Without this, qt:3 is picked up if installed
-        export QTDIR=/usr
+        export QTDIR=/usr/$(exhost --target)
 
         if option examples; then
             # "error: cannot find -liconv"
@@ -89,7 +91,7 @@ src_configure() {
     # Custom configure file hates --without-* and most standard econf options
     edo ./configure \
         --docdir "${DOXYGEN_DOC_DIR}" \
-        --prefix /usr \
+        --prefix /usr/$(exhost --target) \
         --shared \
         $(option qt4 && echo "--with-doxywizard") \
         $(option examples && echo "--with-doxyapp") \

@@ -35,7 +35,7 @@ ewaf() {
         has ${j#--} ${hates} || args+=( "${i}" )
     done
 
-    edo ${WAF_EXECUTABLE} "${args[@]}"
+    PKGCONFIG=${PKG_CONFIG} edo ${WAF_EXECUTABLE} "${args[@]}"
 }
 
 configure_one_multibuild() {
@@ -48,9 +48,9 @@ waf_configure_one_multibuild() {
 
 waf_src_configure() {
     ewaf --jobs=1 configure \
-        --prefix=/usr/ \
-        --bindir=/usr/bin/ \
-        --libdir=/usr/${LIBDIR}/ \
+        --prefix=/usr/$(exhost --target)/ \
+        --bindir=/usr/$(exhost --target)/bin/ \
+        --libdir=/usr/$(exhost --target)/lib/ \
         --datadir=/usr/share/ \
         ${WAF_SRC_CONFIGURE_HTMLDIR---htmldir=/usr/share/doc/${PNVR}/html/} \
         "${WAF_DEFAULT_PARAMS[@]}" \

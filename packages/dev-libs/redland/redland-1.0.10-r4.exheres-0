@@ -78,7 +78,7 @@ src_install() {
     default
 
     if ! option mysql && ! option postgresql && ! option sqlite && ! option virtuoso; then
-        edo rmdir "${IMAGE}"/usr/${LIBDIR}/redland
+        edo rmdir "${IMAGE}"/usr/$(exhost --target)/lib/redland
     fi
 }
 

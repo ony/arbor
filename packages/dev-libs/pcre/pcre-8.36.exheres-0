@@ -1,7 +1,7 @@
 # Copyright 2007 Bryan Østergaard
 # Distributed under the terms of the GNU General Public License v2
 
-require sourceforge easy-multibuild
+require sourceforge
 
 SUMMARY="Perl Compatible Regular Expression library"
 DESCRIPTION="
@@ -27,12 +27,13 @@ UPSTREAM_RELEASE_NOTES="${HOMEPAGE}/news.txt"
 LICENCES="BSD-3"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS="parts: binaries development documentation libraries"
 
 DEPENDENCIES="
-    sys-libs/ncurses[multibuild_c:*(-)?]
-    sys-libs/readline[multibuild_c:*(-)?]
-    sys-libs/zlib[multibuild_c:*(-)?]
+    build+run:
+        sys-libs/ncurses
+        sys-libs/readline
+        sys-libs/zlib
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
@@ -45,25 +46,14 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
     --enable-utf
     --enable-unicode-properties
     --disable-pcretest-libedit
-    --disable-static
 )
 
-install_one_multibuild() {
+src_install() {
     default
 
-    # Move libpcre to /${LIBDIR} to keep grep and thus baselayout working
-    # without requiring /usr to be mounted
-    edo cd "${IMAGE}"/usr/${LIBDIR}
-    dodir /${LIBDIR}
-
-    local f
-    for f in libpcre*; do
-        edo mv $f "${IMAGE}"/${LIBDIR}/
-        dosym /${LIBDIR}/${f} /usr/${LIBDIR}/${f}
-    done
-}
-
-test_one_multibuild() {
-    multibuild_default_target C && default
+    expart binaries /usr/$(exhost --target)/bin
+    expart documentation /usr/share/{doc,man}
+    expart libraries /usr/$(exhost --target)/lib
+    expart development /usr/$(exhost --target)/{include,lib/pkgconfig}
 }
 

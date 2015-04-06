@@ -27,7 +27,7 @@ efibootmgr_src_prepare() {
 }
 
 efibootmgr_src_install() {
-    dosbin src/${PN}/${PN}
+    dobin src/${PN}/${PN}
     doman src/man/man8/${PN}.8
 
     emagicdocs

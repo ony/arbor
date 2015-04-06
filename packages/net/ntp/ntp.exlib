@@ -64,10 +64,12 @@ DEFAULT_SRC_INSTALL_EXTRA_DOCS=( WHERE-TO-START )
 WORK=${WORKBASE}/${MY_PNV}
 
 ntp_src_install() {
+    local host=$(exhost --target)
+
     default
 
     dodir /usr/sbin
-    edo mv "${IMAGE}"/usr/bin/{ntpd,ntpdate} "${IMAGE}"/usr/sbin/
+    edo mv "${IMAGE}"/usr/${host}/bin/{ntpd,ntpdate} "${IMAGE}"/usr/${host}/sbin/
 
     doman "${WORKBASE}"/man/*.[58]
     insinto /usr/share/doc/${PNVR}/
@@ -95,7 +97,7 @@ ntp_src_install() {
     fi
 
     if option systemd ; then
-        insinto /usr/${LIBDIR}/systemd/ntp-units.d
+        insinto /usr/${host}/lib/systemd/ntp-units.d
         hereins 60-ntpd.list <<EOF
 ntpd.service
 EOF
@@ -114,7 +116,7 @@ EOF
 
     edo find "${IMAGE}"/usr/ -type d -empty -delete
 
-    alternatives_for ntpd ${PN} 1 /usr/sbin/ntpd ${PN}-ntpd
+    alternatives_for ntpd ${PN} 1 /usr/${host}/sbin/ntpd ${PN}-ntpd
     alternatives_for ntpd ${PN} 1 /usr/share/man/man8/ntpd.8 ${PN}-ntpd
 }
 

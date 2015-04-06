@@ -3,7 +3,7 @@
 
 MY_PNV=${PN}-r${PV}
 
-require github [ user=Cyan4973 tag=r${PV} ] easy-multibuild [ multiunpack=true work=${MY_PNV} ]
+require github [ user=Cyan4973 tag=r${PV} ]
 
 SUMMARY="Very fast lossless compression algorithm"
 
@@ -13,7 +13,7 @@ LICENCES="
 "
 SLOT="0"
 PLATFORMS="~amd64"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS=""
 
 DEPENDENCIES="
     test:
@@ -22,4 +22,6 @@ DEPENDENCIES="
 
 # valgrind is needed for the tests and breaks them...
 RESTRICT="test"
+
+DEFAULT_SRC_INSTALL_PARAMS=( PREFIX=/usr/$(exhost --target) )
 

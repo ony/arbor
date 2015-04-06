@@ -7,8 +7,8 @@ myexparam systemd_user_files=[ ]
 
 MYOPTIONS="systemd"
 
-export SYSTEMDSYSTEMUNITDIR="/usr/${LIBDIR}/systemd/system"
-export SYSTEMDUSERUNITDIR="/usr/${LIBDIR}/systemd/user"
+export SYSTEMDSYSTEMUNITDIR="/usr/$(exhost --target)/lib/systemd/system"
+export SYSTEMDUSERUNITDIR="/usr/$(exhost --target)/lib/systemd/user"
 
 install_systemd_files() {
     if option systemd ; then

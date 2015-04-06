@@ -15,5 +15,5 @@ DEPENDENCIES=""
 
 WORK=${WORKBASE}/${PNV}-src
 
-DEFAULT_SRC_CONFIGURE_PARAMS=( --hates=docdir )
+DEFAULT_SRC_CONFIGURE_PARAMS=( --hates=docdir --hates=datarootdir )
 

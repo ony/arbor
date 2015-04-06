@@ -4,9 +4,7 @@
 
 require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 ] ]
 
-require easy-multibuild [ skip_nondefault_tests=true ]
-
-export_exlib_phases src_prepare
+export_exlib_phases src_prepare src_test
 
 SUMMARY="TLS 1.0/1.1 and SSL 3.0 Implementation"
 HOMEPAGE="http://www.${PN}.org"
@@ -18,7 +16,6 @@ MYOPTIONS="
     doc
     dane   [[ description = [ DNSSEC DANE support for validating certificates ] ]]
     pkcs11 [[ description = [ Use p11-kit to support multiple external pkcs11 providers ] ]]
-    multibuild_c: 32 64
 "
 
 DEPENDENCIES="
@@ -26,11 +23,11 @@ DEPENDENCIES="
         sys-devel/automake:*[>=1.11.4]
         doc? ( dev-doc/gtk-doc[>=1.1] )
     build+run:
-        dev-libs/libtasn1[>=3.1][multibuild_c:*(-)?]
-        dev-libs/nettle[>=2.7&<3.0][multibuild_c:*(-)?]
-        sys-libs/zlib[>=1.2.3][multibuild_c:*(-)?]
-        dane? ( net-dns/unbound[multibuild_c:*(-)?] )
-        pkcs11? ( dev-libs/p11-kit[>=0.20.0][multibuild_c:*(-)?] )
+        dev-libs/libtasn1[>=3.1]
+        dev-libs/nettle[>=2.7&<3.0]
+        sys-libs/zlib[>=1.2.3]
+        dane? ( net-dns/unbound )
+        pkcs11? ( dev-libs/p11-kit[>=0.20.0] )
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
@@ -65,10 +62,7 @@ gnutls-3_src_prepare() {
     autotools_src_prepare
 }
 
-test_one_multibuild() {
-    # pkcs12-decode and set_pkcs12_cred require the test data in builddir
-    edo cp "${WORK}"/tests/pkcs12-decode/*.p12 "${WORKBASE}/${MULTIBUILD_CLASS}/${MULTIBUILD_TARGET}/tests/pkcs12-decode/"
-
+gnutls-3_src_test() {
     esandbox allow_net "LOOPBACK@80"
     esandbox allow_net "LOOPBACK@5559"
     esandbox allow_net --connect "LOOPBACK@5557"

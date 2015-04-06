@@ -23,5 +23,7 @@ DEPENDENCIES="
         net-libs/libmnl
 "
 
-DEFAULT_SRC_CONFIGURE_PARAMS=( --without-kmod )
+DEFAULT_SRC_CONFIGURE_PARAMS=(
+    --without-kmod
+)
 

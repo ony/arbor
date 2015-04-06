@@ -8,9 +8,9 @@ MY_PV=${MY_PV/_rc/rc}
 MY_PNV=${PN}-${MY_PV}
 
 require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.15 ] ]
-require pam easy-multibuild [ multiunpack=true work=${MY_PNV} ] systemd-service freedesktop-desktop gtk-icon-cache
+require pam systemd-service freedesktop-desktop gtk-icon-cache
 
-export_exlib_phases src_test pkg_postinst pkg_postrm
+export_exlib_phases src_prepare src_configure src_install src_test pkg_postinst pkg_postrm
 
 SUMMARY="Common UNIX Printing System"
 DESCRIPTION="A portable printing layer for UNIX®-based operating systems."
@@ -38,7 +38,6 @@ MYOPTIONS="
     avahi [[ description = [ Enable DNS Service Discovery (DNS_SD) support (printer sharing using Avahi) ] ]]
     tcpd [[ description = [ Use TCP Wrappers to restrict access to cupsd ] ]]
     linguas: ( ${LANGS} )
-    multibuild_c: 32 64
 "
 
 # testsuite has lots of FAILs for now, will check into those next version
@@ -49,20 +48,20 @@ DEPENDENCIES="
         virtual/pkg-config
     build+run:
         group/lpadmin
-        dev-libs/gnutls[multibuild_c:*(-)?]
-        dev-libs/libgcrypt[multibuild_c:*(-)?]
+        dev-libs/gnutls
+        dev-libs/libgcrypt
         dev-libs/libpaper
-        sys-libs/zlib[multibuild_c:*(-)?]
-        virtual/usb:1[multibuild_c:*(-)?]
-        acl? ( sys-apps/acl[multibuild_c:*(-)?] )
-        avahi? ( net-dns/avahi[dns_sd][multibuild_c:*(-)?] )
-        dbus? ( sys-apps/dbus[multibuild_c:*(-)?] )
-        kerberos? ( app-crypt/heimdal[multibuild_c:*(-)?] )
-        pam? ( sys-libs/pam[multibuild_c:*(-)?] )
+        sys-libs/zlib
+        virtual/usb:1
+        acl? ( sys-apps/acl )
+        avahi? ( net-dns/avahi[dns_sd] )
+        dbus? ( sys-apps/dbus )
+        kerberos? ( app-crypt/heimdal )
+        pam? ( sys-libs/pam )
         perl? ( dev-lang/perl:= )
-        python? ( dev-lang/python:*[multibuild_c:*(-)?] )
-        systemd? ( sys-apps/systemd[multibuild_c:*(-)?] )
-        tcpd? ( sys-apps/tcp-wrappers[multibuild_c:*(-)?] )
+        python? ( dev-lang/python:* )
+        systemd? ( sys-apps/systemd )
+        tcpd? ( sys-apps/tcp-wrappers )
     run:
         xinetd? ( sys-apps/xinetd )
     post:
@@ -73,7 +72,7 @@ DEPENDENCIES="
 
 AT_M4DIR=( config-scripts )
 
-prepare_one_multibuild() {
+cups_src_prepare() {
     # do not strip by default
     edo sed -e 's:INSTALL_STRIP="-s":INSTALL_STRIP="":' \
             -i config-scripts/cups-compiler.m4
@@ -94,7 +93,7 @@ prepare_one_multibuild() {
     autotools_src_prepare
 }
 
-configure_one_multibuild() {
+cups_src_configure() {
     local myconf=()
 
     for lang in ${LANGS}; do
@@ -135,30 +134,18 @@ configure_one_multibuild() {
         $(option_with python)
         $(option_with systemd systemd ${SYSTEMDSYSTEMUNITDIR})
         $(option_with xinetd xinetd /etc/xinetd.d)
+        ac_cv_path_AR="${AR}"
         DSOFLAGS="${CFLAGS}" LDFLAGS="${CFLAGS} ${LDFLAGS}"
     )
 
     econf "${myconf[@]}"
 }
 
-compile_one_multibuild() {
-    if multibuild_default_target C; then
-        emake
-    else
-        emake libs
-    fi
-}
-
-install_one_multibuild() {
-    if ! multibuild_default_target C; then
-        emake BUILDROOT="${IMAGE}" install-libs
-        return
-    fi
-
+cups_src_install() {
     emake BUILDROOT="${IMAGE}" install
     emagicdocs
 
-    keepdir /usr/libexec/cups/driver /usr/share/cups/{model,profiles} \
+    keepdir /usr/$(exhost --target)/libexec/cups/driver /usr/share/cups/{model,profiles} \
             /var/cache/cups/rss /var/log/cups /var/spool/cups/tmp
 
     keepdir /etc/cups/{interfaces,ppd,ssl}
@@ -202,13 +189,10 @@ cups_pkg_postrm() {
 }
 
 cups_src_test() {
-    if option multibuild_c:"${MULTIBUILD_C_DEFAULT_TARGET}" ; then
-        edo cd "${WORKBASE}/C/${MULTIBUILD_C_DEFAULT_TARGET}/${PNV}"
-        # 1 = medium testsuite
-        emake test
-        edo cd test
-        USER=paludisbuild edo ./run-stp-tests.sh 1 2 n
-    fi
+    # 1 = medium testsuite
+    emake test
+    edo cd test
+    USER=paludisbuild edo ./run-stp-tests.sh 1 2 n
 }
 
 #cups_src_test_expensive() {

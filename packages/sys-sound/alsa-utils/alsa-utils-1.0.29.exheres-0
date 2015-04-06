@@ -46,7 +46,6 @@ DEPENDENCIES="
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --sbindir=/usr/sbin
     --enable-nls
     # disable alsaconf like all other distros do
     --disable-alsaconf

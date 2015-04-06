@@ -65,13 +65,11 @@ src_prepare() {
 
     edo sed -i "s/^#CBCP=y/CBCP=y/" pppd/Makefile.linux
 
-    # Set correct libdir
-    edo sed -i -e "s:/lib/pppd:/${LIBDIR}/pppd:" pppd/{pathnames.h,pppd.8}
-
     if option radius ; then
         # set the right paths in radiusclient.conf
-        edo sed -i -e "s:/usr/local/etc:/etc:" \
-                -e "s:/usr/local/sbin:/usr/sbin:" pppd/plugins/radius/etc/radiusclient.conf
+        edo sed -e "s:/usr/local/etc:/etc:" \
+                -e "s:/usr/local/sbin:/usr/$(exhost --target)/bin:" \
+                -i pppd/plugins/radius/etc/radiusclient.conf
 
         # set config dir to /etc/ppp/radius
         edo sed -e "s:/etc/radiusclient:/etc/ppp/radius:g" \
@@ -84,16 +82,16 @@ src_install() {
     for i in chat pppd pppdump pppstats
     do
         doman ${i}/${i}.8
-        dosbin ${i}/${i}
+        dobin ${i}/${i}
     done
-    edo chmod u+s-w "${IMAGE}"/usr/sbin/pppd
+    edo chmod u+s-w "${IMAGE}"/usr/$(exhost --target)/bin/pppd
 
     # Install pppd header files
     edo pushd pppd
     emake -j1 INSTROOT="${IMAGE}" install-devel
     edo popd
 
-    dosbin pppd/plugins/rp-pppoe/pppoe-discovery
+    dobin pppd/plugins/rp-pppoe/pppoe-discovery
 
     keepdir /etc/ppp/peers
     insinto /etc/ppp
@@ -114,7 +112,7 @@ src_install() {
 
     pamd_mimic_system ppp auth auth account session
 
-    insinto /usr/${LIBDIR}/pppd/${PV}
+    insinto /usr/$(exhost --target)/lib/pppd/${PV}
     insopts -m0755
     doins pppd/plugins/{minconn,passprompt,passwordfd,winbind,rp-pppoe/rp-pppoe,pppol2tp/openl2tp,pppol2tp/pppol2tp}.so
 
@@ -143,9 +141,9 @@ src_install() {
     dodoc PLUGINS SETUP "${FILES}"/README.mpls
     edo cp -pPR {contrib,scripts} "${IMAGE}/usr/share/doc/${PNVR}/"
 
-    dosbin scripts/pon
-    dosbin scripts/poff
-    dosbin scripts/plog
+    dobin scripts/pon
+    dobin scripts/poff
+    dobin scripts/plog
     doman scripts/pon.1
 }
 

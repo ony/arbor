@@ -1,0 +1,118 @@
+# Copyright 2015 Saleem Abdulrasool <compnerd@compnerd.org>
+# Distributed under the terms of the GNU General Public License v2
+
+require gnu [ suffix=bz2 subdir=gcc-${PV} pn=gcc ]
+require toolchain-runtime-libraries
+
+if [[ ${PV} == *_pre* ]] ; then
+    DOWNLOADS="ftp://gcc.gnu.org/pub/gcc/snapshots/$(ever range 1-2)-${PV##*_pre}/gcc-$(ever range 1-2)-${PV##*_pre}.tar.bz2"
+fi
+
+SUMMARY="GCC C Runtime Library"
+LICENCES="GPL-2"
+SLOT="$(ever range 1-2)"
+
+MYOPTIONS="
+    linguas:
+        be ca da de el eo es fi fr hr id ja nl ru sr sv tr uk vi zh_CN zh_TW
+"
+
+DEPENDENCIES="
+    build+run:
+        sys-libs/glibc
+"
+
+REMOTE_IDS="freecode:gcc"
+
+UPSTREAM_RELEASE_NOTES="${HOMEPAGE}gcc-${SLOT}/"
+UPSTREAM_CHANGELOG="${UPSTREAM_RELEASE_NOTES}changes.html"
+
+ECONF_SOURCE="${WORKBASE}/gcc-${PV/_p?(re)/-}"
+WORK="${WORKBASE}/gcc-${PV/_p?(re)/-}/build"
+
+# TODO(compnerd) find a way to expose build tools when cross-compiling and replace
+# {AR,RANLIB}_FOR_BUILD accordingly
+# TODO(compnerd) use cc rather than gcc for CC_FOR_TARGET
+DEFAULT_SRC_CONFIGURE_PARAMS=( AR_FOR_BUILD=$(exhost --build)-ar
+                               CC_FOR_BUILD=$(exhost --build)-gcc
+                               RANLIB_FOR_BUILD=$(exhost --build)-ranlib
+                               CC_FOR_TARGET=$(exhost --tool-prefix)gcc
+                               --disable-bootstrap
+                               --disable-multilib --with-multilib-list='' --enable-languages=c
+                               --disable-fixincludes
+                               --disable-intl
+                               --disable-lto
+                               --disable-libatomic
+                               --disable-libbacktrace
+                               --disable-libcpp
+                               --disable-libssp
+                               --disable-libquadmath
+                               --disable-libgomp
+                               --with-system-zlib )
+
+# NOTE(compnerd) libgcc does not have a testsuite
+RESTRICT="test"
+
+libgcc_src_unpack() {
+    default
+    edo mkdir -p "${WORK}"
+    edo mkdir -p "${ECONF_SOURCE}/gmp"
+    edo chmod +x "${ECONF_SOURCE}/libgcc/configure"
+}
+
+libgcc_src_prepare() {
+    cd "${ECONF_SOURCE}"
+    default
+
+    # TODO(compnerd) do this properly via autotools
+    edo sed -e '/export_sym_check=/c export_sym_check="'"$(exhost --build)"'-objdump -T"' \
+            -i "${ECONF_SOURCE}/gcc/configure"
+}
+
+libgcc_src_compile() {
+    emake all-build-libiberty
+
+    emake all-libdecnumber
+
+    edo mkdir -p "${WORK}/gcc"
+    edo cd "${WORK}/gcc"
+        CC=$(exhost --build)-gcc                \
+        CXX=$(exhost --build)-g++               \
+    edo "${ECONF_SOURCE}/gcc/configure"         \
+            --host=$(exhost --build)            \
+            --build=$(exhost --build)           \
+            --target=$(exhost --target)         \
+            --prefix=/usr/$(exhost --build)     \
+            --libdir=/usr/$(exhost --build)/lib \
+            --disable-bootstrap                 \
+            --disable-multilib                  \
+            --with-multilib-list=''             \
+            --enable-languages=c
+    edo sed -e 's,libgcc.mvars:.*$,libgcc.mvars:,' -i Makefile
+    edo make libgcc.mvars tconfig.h tm.h options.h insn-constants.h insn-modes.h gcov-iov.h
+    edo mkdir -p "${WORK}/gcc/include"
+
+    edo mkdir -p "${WORK}/$(exhost --target)/libgcc"
+    edo cd "${WORK}/$(exhost --target)/libgcc"
+    edo "${ECONF_SOURCE}/libgcc/configure"       \
+            --build=$(exhost --build)            \
+            --host=$(exhost --target)            \
+            --prefix=/usr/$(exhost --target)     \
+            --libdir=/usr/$(exhost --target)/lib \
+            --disable-multilib
+    edo emake
+}
+
+libgcc_src_install() {
+    # NOTE(compnerd) we must manually install here to avoid installing the build time dependencies
+    # of gcc and fixheaders from being merged as part of this package.  einstall will by default add
+    # 'install' to the make invocation, resulting in host and target builds being installed.
+    edo cd "${WORK}/$(exhost --target)/libgcc"
+    edo emake DESTDIR="${IMAGE}" install-shared
+
+    symlink_dynamic_libs ${SLOT} ${PN}_s
+    slot_dynamic_libs ${SLOT} ${PN}_s
+}
+
+export_exlib_phases src_unpack src_prepare src_compile src_install
+

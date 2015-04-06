@@ -25,6 +25,7 @@ DEPENDENCIES="
 
 DEFAULT_SRC_PREPARE_PATCHES=( -p2 "${FILES}"/${PN}-2.8.6-gold.patch )
 DEFAULT_SRC_CONFIGURE_PARAMS=(
+    MOUNT_FUSE_PATH=/usr/$(exhost --target)/bin
     --disable-example
     --disable-static
 )

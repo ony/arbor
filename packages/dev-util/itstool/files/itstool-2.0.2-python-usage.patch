@@ -1,0 +1,15 @@
+Author: Saleem Abdulrasool <compnerd@compnerd.org>
+Upstream: no; need to report it
+Reason: permit overriding the python that is used
+-- 
+--- itstool-2.0.2/configure.ac	2015-03-21 16:50:09.026347045 -0700
++++ itstool-2.0.2/configure.ac	2015-03-21 16:50:21.415249255 -0700
+@@ -14,7 +14,7 @@
+ 
+ py_module=libxml2
+ AC_MSG_CHECKING(for python module $py_module)
+-echo "import $py_module" | python - &>/dev/null
++echo "import $py_module" | "${PYTHON}" - &>/dev/null
+ if test $? -ne 0; then
+ 	AC_MSG_RESULT(not found)
+ 	AC_MSG_ERROR(Python module $py_module is needed to run this package)

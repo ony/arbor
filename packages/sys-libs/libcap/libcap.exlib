@@ -3,9 +3,9 @@
 # Based in part upon 'libcap-2.08-r1.ebuild' from Gentoo, which is:
 #     Copyright 1999-2008 Gentoo Foundation
 
-require pam easy-multibuild [ work=${PNV} ]
+require pam
 
-export_exlib_phases src_unpack src_prepare src_compile
+export_exlib_phases src_prepare src_compile src_install
 
 SUMMARY="POSIX 1003.1e capabilities"
 HOMEPAGE="http://sites.google.com/site/fullycapable/"
@@ -13,27 +13,17 @@ DOWNLOADS="mirror://kernel/linux/libs/security/linux-privs/${PN}${PV:0:1}/${PNV}
 
 LICENCES="|| ( GPL-2 BSD-3 )"
 SLOT="0"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS="parts: binaries configuration development documentation libraries"
 
 DEPENDENCIES="
     build:
         sys-kernel/linux-headers
     build+run:
-        sys-apps/attr[multibuild_c:*(-)?]
-        sys-libs/pam[multibuild_c:*(-)?]
+        sys-apps/attr
+        sys-libs/pam
 "
 
-WORK=${WORKBASE}
-
-unpack_prepare_one_multibuild() {
-    edo mkdir -p "${WORKBASE}/${MULTIBUILD_CLASS}/${MULTIBUILD_TARGET}"
-}
-
-libcap_src_unpack() {
-    easy-multibuild_run_phase
-}
-
-prepare_one_multibuild() {
+libcap_src_prepare() {
     default
 
     edo sed -f - -i Make.Rules <<'EOF'
@@ -41,29 +31,40 @@ prepare_one_multibuild() {
         s|:=|?=|;
     }
 EOF
-    edo sed -e 's/\$(BUILD_CC)/& $(LDFLAGS)/' -i libcap/Makefile
 }
-
-libcap_src_prepare() {
-    easy-multibuild_run_phase
-}
-
-configure_prepare_one_multibuild() { :; }
 
 libcap_src_compile() {
-    export PAM_CAP=yes
+    local host_prefix=$(exhost --build)
+    local build_cflags=${host_prefix//-/_}_CFLAGS
 
-    easy-multibuild_src_compile
+    emake                                                           \
+        BUILD_CC="${host_prefix}-gcc"                               \
+        BUILD_CFLAGS="${!build_cflags} \$(IPATH)"                   \
+        lib=lib                                                     \
+        PAM_CAP=yes
 }
 
-install_one_multibuild() {
+libcap_src_install() {
     emagicdocs
 
-    emake -j1 DESTDIR="${IMAGE}" lib=${LIBDIR} RAISE_SETFCAP=no install
+    emake -j1                               \
+        DESTDIR="${IMAGE}"                  \
+        SBINDIR=/usr/$(exhost --target)/bin \
+        prefix=/usr/$(exhost --target)      \
+        lib=lib                             \
+        man_prefix=/usr/share               \
+        RAISE_SETFCAP=no                    \
+        install
 
     dopammod pam_cap/pam_cap.so
     dopamsecurity '' pam_cap/capability.conf
 
     dodoc doc/capability.notes
+
+    expart binaries /usr/$(exhost --target)/bin
+    expart configuration /etc
+    expart development /usr/$(exhost --target)/include
+    expart documentation /usr/share/{doc,man}
+    expart libraries /usr/$(exhost --target)/lib
 }
 

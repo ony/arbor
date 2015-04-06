@@ -28,14 +28,14 @@ eqmake() {
         export QMAKESPEC="/usr/share/qt${qt_slot}/mkspecs/linux-g++"
     fi
 
-    local qmake_path
+    local qmake_path host=$(exhost --target)
 
     case ${qt_slot} in
         4)
-            qmake_path=/usr/bin/qmake
+            qmake_path=/usr/${host}/bin/qmake
             ;;
         5)
-            qmake_path=/usr/${LIBDIR}/qt5/bin/qmake
+            qmake_path=/usr/${host}/lib/qt5/bin/qmake
             ;;
     esac
 
@@ -44,7 +44,7 @@ eqmake() {
     [[ ${@} == ${@%.pro} && -z ${EQMAKE_SOURCES[@]} ]] && EQMAKE_SOURCES=( ${PN}.pro )
 
     edo ${qmake_path} \
-        QTDIR="/usr/${LIBDIR}" \
+        QTDIR="/usr/${host}/lib" \
         QMAKE="${qmake_path}" \
         QMAKE_CFLAGS_RELEASE="${CFLAGS}" \
         QMAKE_CXXFLAGS_RELEASE="${CXXFLAGS}" \

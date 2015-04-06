@@ -11,9 +11,11 @@ else
     PATCH_LEVEL=0
 fi
 
-require gnu [ suffix=gz ] easy-multibuild
+# Need autotools for AC_FUNC_STRCOLL
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 ] ]
+require gnu [ suffix=gz ]
 
-export_exlib_phases src_prepare
+export_exlib_phases src_prepare src_install
 
 SUMMARY="GNU command line editing and history library"
 DESCRIPTION="
@@ -27,7 +29,7 @@ HOMEPAGE="http://cnswww.cns.cwru.edu/php/chet/${PN}/rltop.html"
 
 if (( PATCH_LEVEL )) ; then
     DOWNLOADS+="
-    $(for ((i=1; i<=PATCH_LEVEL; i++)); do
+    $(for (( i=1; i<=PATCH_LEVEL; i++ )); do
         printf "ftp://ftp.cwru.edu/pub/bash/${MY_PNV}-patches/${PN}$(ever delete_all ${MY_PV})-%03d\n" ${i}
     done)"
 fi
@@ -37,17 +39,16 @@ UPSTREAM_CHANGELOG="http://cnswww.cns.cwru.edu/php/chet/${PN}/CHANGES"
 
 LICENCES="GPL-3"
 SLOT="0"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS="parts: development documentation libraries"
 
 DEPENDENCIES="
     build:
         virtual/pkg-config
     build+run:
-        sys-libs/ncurses[multibuild_c:*(-)?]
+        sys-libs/ncurses
 "
 
-WORK=${WORKBASE}/${MY_PNV}
-
+DEFAULT_SRC_CONFIGURE_PARAMS=( --disable-static )
 DEFAULT_SRC_INSTALL_PARAMS=(
     htmldir="/usr/share/doc/${PNVR}/html"
 
@@ -58,33 +59,32 @@ DEFAULT_SRC_INSTALL_PARAMS=(
 readline_src_prepare() {
     if (( PATCH_LEVEL )) ; then
         local i patches=( -p0 )
-        for ((i=1; i<=PATCH_LEVEL; i++)); do
-            patches+=("${FETCHEDDIR}/${PN}$(ever delete_all ${MY_PV})-$(printf "%03d" ${i})")
+
+        for (( i=1; i<=PATCH_LEVEL; i++ )) ; do
+            patches+=( "${FETCHEDDIR}/${PN}$(ever delete_all ${MY_PV})-$(printf "%03d" ${i})" )
         done
+
         expatch "${patches[@]}"
     fi
 
     # link to ncursesw instead of ncurses, commit bb62b887
     # force ncurses(w) linking Gentoo #71420
     # use pkg-config to get the right values Gentoo #457558
-    local ncurses_libs=$(PKG_CONFIG_PATH=. pkg-config ncursesw --libs)
+    local ncurses_libs=$(PKG_CONFIG_PATH=. ${PKG_CONFIG} ncursesw --libs)
     sed -e "/^SHLIB_LIBS=/s:=.*:='${ncurses_libs}':" \
         -i support/shobj-conf
     sed -e "/^[[:space:]]*LIBS=.-lncurses/s:-lncurses:${ncurses_libs}:" \
         -i examples/rlfe/configure
 
-    default
+    autotools_src_prepare
 }
 
-configure_one_multibuild() {
-    econf \
-        --hates=libdir \
-        --libdir=/${LIBDIR} \
-        --disable-static
-}
-
-install_one_multibuild() {
+readline_src_install() {
     default
-    edo rmdir "${IMAGE}"/usr/bin
+    edo rmdir "${IMAGE}/usr/$(exhost --target)/bin"
+
+    expart development /usr/$(exhost --target)/include
+    expart documentation /usr/share/{doc,info,man}
+    expart libraries /usr/$(exhost --target)/lib
 }
 

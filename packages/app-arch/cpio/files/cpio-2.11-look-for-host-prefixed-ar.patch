@@ -1,0 +1,32 @@
+Upstream: submitted, http://lists.gnu.org/archive/html/bug-cpio/2014-08/msg00001.html
+
+From 6759b5428b523316ca0d96a2984ed85c8e64432d Mon Sep 17 00:00:00 2001
+From: Benedikt Morbach <benedikt.morbach@googlemail.com>
+Date: Tue, 26 Aug 2014 00:34:10 +0200
+Subject: [PATCH] configure.ac: look for host-prefixed ar
+Organization: Exherbo
+
+This patch changes configure.ac to look for '${host}-ar' before looking for the unprefixed 'ar'.
+This is useful when cross-compiling when all your binutils are prefixed.
+
+I used AC_CHECK_TOOLS instead of AC_CHECK_TOOL, since autoconf docs say
+that the former calls AC_SUBST, which saves a line.
+---
+ configure.ac | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configure.ac b/configure.ac
+index 1d3d985..6ddf528 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -34,6 +34,7 @@ AC_PROG_GCC_TRADITIONAL
+ AC_PROG_INSTALL
+ AC_PROG_RANLIB
+ AC_PROG_YACC
++AC_CHECK_TOOLS([AR], [ar])
+ gl_EARLY
+ AC_C_PROTOTYPES
+ 
+-- 
+2.0.4
+

@@ -1,19 +1,17 @@
 # Copyright 2012 NAKAMURA Yoshitaka
 # Distributed under the terms of the GNU General Public License v2
 
-require easy-multibuild
-
 SUMMARY="Libray for DNS programming"
 HOMEPAGE="http://www.nlnetlabs.nl/projects/ldns/"
 DOWNLOADS="http://www.nlnetlabs.nl/downloads/ldns/${PNV}.tar.gz"
 
 LICENCES="BSD-3"
 SLOT="0"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS=""
 
 DEPENDENCIES="
     build+run:
-        virtual/libssl[multibuild_c:*(-)?]
+        virtual/libssl
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(

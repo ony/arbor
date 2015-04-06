@@ -36,10 +36,14 @@ DEFAULT_SRC_INSTALL_EXTRA_SUBDIRS=( kpartx )
 multipath-tools_src_prepare() {
     default
 
-    edo sed -i -e '1iSYSTEMD=1' Makefile.inc
-    edo sed -i -e '/KRNLLIB/s:/lib/:/'${LIBDIR}'/:' Makefile
-    edo sed -i -e '/libudevdir/s:/lib/:/usr/libexec/:' Makefile.inc
+    edo sed -i -e "1iSYSTEMD=1" Makefile.inc
+    edo sed -i -e "/KRNLLIB/s:/lib/:/usr/$(exhost --target)/lib:" Makefile
+    edo sed -i -e "/libudevdir/s:/lib/:/usr/$(exhost --target)/libexec/:" Makefile.inc
     edo sed -i -e "/unitdir/s:/usr/lib/systemd/system:${SYSTEMDSYSTEMUNITDIR}:" Makefile.inc
+    edo sed -i -e "/bindir/s:/sbin:/usr/$(exhost --target)/bin:" Makefile.inc
+    edo sed -i -e "s:\(syslibdir\).*= .*:\1 = /usr/$(exhost --target)/lib:" Makefile.inc
+    edo sed -i -e "s:\(libdir\).*= .*:\1 = /usr/$(exhost --target)/lib:" Makefile.inc
+    edo sed -i -e "/DESTDIR/s:include:$(exhost --target)/include:" libmpathpersist/Makefile
 }
 
 multipath-tools_src_install() {

@@ -10,7 +10,7 @@ exparam -v GIT_REMOTE_HELPERS git_remote_helpers[@]
 
 require perl-module python bash-completion elisp-optional [ source_directory=contrib/emacs ] systemd-service zsh-completion
 
-export_exlib_phases src_unpack src_configure src_compile src_test src_install
+export_exlib_phases src_{unpack,prepare,configure,compile,test,install}
 
 SUMMARY="A distributed VCS focused on speed, effectivity and real-world usability on large projects"
 DESCRIPTION="
@@ -100,6 +100,10 @@ git-googlecode_src_unpack() {
     fi
 }
 
+git-googlecode_src_prepare() {
+    edo sed -i "s#pkg-config#${PKG_CONFIG}#g" contrib/credential/gnome-keyring/Makefile
+}
+
 # No option: mozsha1/ppcsha1
 # TODO Check whether we want NO_CROSS_DIRECTORY_HARDLINKS wrt pbins
 git-googlecode_src_configure() {
@@ -113,8 +117,8 @@ git-googlecode_src_configure() {
 myemake() {
     emake \
         DESTDIR="${IMAGE}" \
-        prefix=/usr \
-        gitexecdir=/usr/libexec/${PN} \
+        prefix=/usr/$(exhost --target) \
+        gitexecdir=/usr/$(exhost --target)/libexec/${PN} \
         gitwebdir=/usr/share/gitweb \
         template_dir=/usr/share/${PN}/templates \
         INSTALLSITELIB=${VENDOR_LIB} \
@@ -122,6 +126,9 @@ myemake() {
         LDFLAGS="${LDFLAGS}" \
         CC="${CC}" \
         AR="${AR}" \
+        PKG_CONFIG="${PKG_CONFIG}" \
+        PERL_PATH=/usr/$(exhost --build)/bin/perl \
+        PYTHON_PATH="${PYTHON}" \
         ${myoptions} \
         "${@}"
 }
@@ -167,7 +174,7 @@ git-googlecode_src_install() {
     dozshcompletion contrib/completion/git-completion.bash
     elisp-optional_src_install
 
-    exeinto /usr/libexec/${PN}
+    exeinto /usr/$(exhost --target)/libexec/${PN}
     newexe contrib/fast-import/import-tars.perl git-import-tars
     option keyring && doexe contrib/credential/gnome-keyring/git-credential-gnome-keyring
 
@@ -175,8 +182,8 @@ git-googlecode_src_install() {
     dodoc gitweb/{INSTALL,README}
 
     fixlocalpod
-    edo find "${IMAGE}/usr/${LIBDIR}/perl5" -type f -name .packlist -delete
-    edo find "${IMAGE}/usr/${LIBDIR}/perl5" -type d -empty -delete
+    edo find "${IMAGE}/usr/$(exhost --target)/lib/perl5" -type f -name .packlist -delete
+    edo find "${IMAGE}/usr/$(exhost --target)/lib/perl5" -type d -empty -delete
 
     if option baselayout ; then
         newinitd "${FILES}"/git-daemon.initd git-daemon

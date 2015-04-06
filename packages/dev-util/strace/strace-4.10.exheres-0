@@ -28,14 +28,16 @@ DEPENDENCIES="
 # RESTRICT="userpriv" due to the usage of ptrace.
 RESTRICT="test"
 
+# TODO(compnerd) use cc instead of gcc
+DEFAULT_SRC_CONFIGURE_PARAMS=( CC_FOR_BUILD="$(exhost --target)-gcc" )
+
 src_prepare() {
     default
 
     # /usr/bin/time might not exist but busybox does and is needed for the tests.
-    edo sed \
-        -e 's:/usr/bin/\(time\):"/bin/busybox \1":' \
-        -e '/check_prog $time/d' \
-        -i tests/strace-f.test
+    edo sed -e 's:/usr/bin/\(time\):"/bin/busybox \1":' \
+            -e '/check_prog $time/d'                    \
+            -i tests/strace-f.test
 }
 
 

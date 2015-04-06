@@ -44,13 +44,15 @@ DEPENDENCIES="
 
 DEFAULT_SRC_COMPILE_PARAMS+=(
     CC="${CC}"
+    HOSTCC="${CC}"
     AR="${AR}"
-    LIBDIR=/usr/${LIBDIR}
-    IPT_LIB_DIR=/usr/${LIBDIR}
+    LIBDIR=/usr/$(exhost --target)/lib
+    IPT_LIB_DIR=/usr/$(exhost --target)/lib
 )
 
 DEFAULT_SRC_INSTALL_PARAMS+=(
-    LIBDIR=/usr/${LIBDIR}
+    SBINDIR=/usr/$(exhost --target)/bin
+    LIBDIR=/usr/$(exhost --target)/lib
     DOCDIR=/usr/share/doc/${PNVR}
     MANDIR=/usr/share/man
 )
@@ -104,14 +106,12 @@ iproute2_src_install() {
 
     if optionq berkdb ; then
         keepdir /var/lib/arpd
-        dodir /usr/sbin
-        edo mv "${IMAGE}"/{,usr/}sbin/arpd
     else
         edo rmdir "${IMAGE}"/var/{lib/{arpd,},}
     fi
 
     if ! ever at_least 3.4.0 && ! option atm ; then
-        edo rmdir "${IMAGE}"/${LIBDIR}/{tc,}
+        edo rmdir "${IMAGE}"/$(exhost --target)/lib/{tc,}
     fi
 }
 

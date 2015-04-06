@@ -1,14 +1,14 @@
 # Copyright 2009 Bryan Østergaard
 # Distributed under the terms of the GNU General Public License v2
 
-if (($(ever range 2) % 2)); then
+if (( $(ever range 2) % 2 )); then
     require gnu [ alpha=true suffix=gz ]
 else
     require gnu [ suffix=gz ]
 fi
 require alternatives
 
-export_exlib_phases src_install src_test_expensive
+export_exlib_phases src_configure src_test_expensive src_install
 
 SUMMARY="Basic directory searching utilities"
 
@@ -25,37 +25,42 @@ DEPENDENCIES="
         dev-util/dejagnu
 "
 
-DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --enable-d_type-optimisation
-    --enable-leaf-optimisation
-    --enable-nls
-    --libexecdir=/usr/libexec/${PN}
-    --without-included-regex
-    --without-selinux
-)
+findutils_src_configure() {
+    econf \
+        --enable-d_type-optimisation \
+        --enable-leaf-optimisation \
+        --enable-nls \
+        --libexecdir=/usr/$(exhost --target)/libexec/${PN} \
+        --without-included-regex \
+        --without-selinux
+}
 
 findutils_src_test_expensive() {
-    esandbox allow_net --bind "inet:127.0.0.1@80"
-    esandbox allow_net --connect "inet:127.0.0.1@80"
+    if exhost --is-native -q; then
+        esandbox allow_net --bind "inet:127.0.0.1@80"
+        esandbox allow_net --connect "inet:127.0.0.1@80"
 
-    emake check
+        emake "${DEFAULT_SRC_TEST_PARAMS[@]}" check
 
-    esandbox disallow_net --connect "inet:127.0.0.1@80"
-    esandbox disallow_net --bind "inet:127.0.0.1@80"
+        esandbox disallow_net --connect "inet:127.0.0.1@80"
+        esandbox disallow_net --bind "inet:127.0.0.1@80"
+    else
+        echo "cross compiled host, skipping tests"
+    fi
 }
 
 findutils_src_install() {
-    default
-
     local alternatives=(
         locate ${PN} 10
 
-        /usr/bin/locate                ${PN}.locate
-        /usr/bin/updatedb              ${PN}.updatedb
-        /usr/share/man/man1/locate.1   /usr/share/man/man1/${PN}.locate.1
-        /usr/share/man/man1/updatedb.1 /usr/share/man/man1/${PN}.updatedb.1
-        /usr/share/man/man5/locatedb.5 /usr/share/man/man5/${PN}.locatedb.5
+        /usr/$(exhost --target)/bin/locate        ${PN}.locate
+        /usr/$(exhost --target)/bin/updatedb      ${PN}.updatedb
+        /usr/share/man/man1/locate.1    /usr/share/man/man1/${PN}.locate.1
+        /usr/share/man/man1/updatedb.1  /usr/share/man/man1/${PN}.updatedb.1
+        /usr/share/man/man5/locatedb.5  /usr/share/man/man5/${PN}.locatedb.5
     )
+
+    default
 
     alternatives_for "${alternatives[@]}"
 

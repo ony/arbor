@@ -4,7 +4,7 @@
 
 require multibuild
 
-BASE_TARBALL_PV="0.4"
+BASE_TARBALL_PV="0.4-cross-3"
 SUMMARY="Skeleton filesystem layout"
 HOMEPAGE="http://www.exherbo.org/"
 DOWNLOADS="http://dev.exherbo.org/distfiles/${PN}/${PN}-base-etc-${BASE_TARBALL_PV}.tar.xz"
@@ -37,33 +37,20 @@ create_device_node() {
 
 pkg_pretend() {
     local x
-    if [[ ${LIBDIR} != lib ]]; then
-        for x in {,/usr,/usr/local}/lib; do
-            if [[ -e "${ROOT}${x}" && ! -L "${ROOT}${x}" ]]; then
-                die "${x}: Expected a symlink but found a directory"
-            fi
-        done
-    fi
+    # checks more than it has to, but if you have /include then you did something wrong anyway.
+    for x in {,/usr}/{bin,sbin,lib,libexec,include} /usr/$(exhost --target)/sbin; do
+        if [[ -e "${ROOT}${x}" && ! -L "${ROOT}${x}" ]]; then
+            die "${x}: Expected a symlink but found a directory"
+        fi
+    done
 }
 
 src_install() {
-    insinto /usr/${LIBDIR}
+    insinto /usr/$(exhost --target)/lib
     doins "${FILES}"/os-release
 
     insinto /etc
     doins "${FILES}"/exherbo-release
-
-    if [[ ${LIBDIR} != lib ]]; then
-        local multibuild_c_target ldpath=()
-        for multibuild_c_target in ${MULTIBUILD_C_TARGETS} ; do
-            multibuild_switch_build_target C ${multibuild_c_target}
-            ldpath=( /usr/${LIBDIR} /${LIBDIR} "${ldpath[@]}" )
-        done
-        IFS=": " ldpath="${ldpath[*]}"
-        hereenvd 10multilib <<EOF
-LDPATH="${ldpath}"
-EOF
-    fi
 
     doins -r "${WORK}"/${PN}-base-etc-${BASE_TARBALL_PV}/*
 }
@@ -82,8 +69,7 @@ pkg_postinst() {
     local x
     # create directory structure. for readability leave out /usr and /var
     # structures and create them separately.
-    for x in bin boot dev{,/pts} etc home mnt \
-        media opt proc run sbin; do
+    for x in boot dev{,/pts} etc home mnt media opt proc run; do
             create_root_owned_directory "${ROOT}${x}"
     done
     edo touch "${ROOT}"/opt/.keep
@@ -91,9 +77,9 @@ pkg_postinst() {
         edo mkdir -p "${ROOT}"/sys
     fi
 
-    # sysctl.conf can be in /etc but defaults to being in /usr/${LIBDIR} nowadays
+    # sysctl.conf can be in /etc but defaults to being in /usr/$(exhost --target)/lib nowadays
     [[ -f ${ROOT}/etc/sysctl.conf ]] && edo chmod 0640 "${ROOT}"/etc/sysctl.conf
-    [[ -f ${ROOT}/usr/${LIBDIR}/sysctl.conf ]] && edo chmod 0640 "${ROOT}"/usr/${LIBDIR}/sysctl.conf
+    [[ -f ${ROOT}/usr/$(exhost --target)/lib/sysctl.conf ]] && edo chmod 0640 "${ROOT}"/usr/$(exhost --target)/lib/sysctl.conf
 
     edo chmod 0600 "${ROOT}"/etc/shadow
 
@@ -105,12 +91,17 @@ pkg_postinst() {
     edo ln -sf /proc/self/mounts "${ROOT}"/etc/mtab
 
     # /usr structure
-    for x in usr{,/bin,/include,/sbin,/share,/src}; do
+    for x in usr{,/$(exhost --target),/{share,src,local}}; do
+        create_root_owned_directory "${ROOT}${x}"
+    done
+
+    # /usr/$(exhost --target) structure
+    for x in usr/$(exhost --target)/{bin,include,lib,libexec}; do
         create_root_owned_directory "${ROOT}${x}"
     done
 
     # /usr/local structure
-    for x in usr/local{,/bin,/etc,/man,/sbin,/share{,/man}}; do
+    for x in usr/local/{bin,include,lib,libexec,etc,man,share{,/man}}; do
         create_root_owned_directory "${ROOT}${x}"
     done
 
@@ -147,23 +138,20 @@ pkg_postinst() {
         create_root_owned_directory "${ROOT}${x}" 1777
     done
 
-    # create LIBDIRs and lib symlinks if applicable
-    if [[ ${LIBDIR} != lib ]]; then
-        local multibuild_c_target
-        for multibuild_c_target in ${MULTIBUILD_C_TARGETS} ; do
-            multibuild_switch_build_target C ${multibuild_c_target}
-            create_root_owned_directory "${ROOT}${LIBDIR}"
-            create_root_owned_directory "${ROOT}usr/${LIBDIR}"
-            create_root_owned_directory "${ROOT}usr/local/${LIBDIR}"
-        done
+    # create host symlink for default target
+    edo ln -snTf $(exhost --build) "${ROOT}"usr/host
 
-        for x in {,usr/,usr/local/}lib ; do
-            if [[ -e ${ROOT}${x} && ! -L ${ROOT}${x} ]] ; then
-                die "${x}: Expected a symlink but found a directory"
-            fi
+    edo ln -snTf lib "${ROOT}"usr/host/lib64
 
-            edo ln -sfn "${LIBDIR}" "${ROOT}${x}"
-        done
-    fi
+    # create compat symlinks for bin, sbin, include, lib{,exec} and /usr/local
+    for x in bin sbin include lib libexec; do
+        edo ln -snTf host/${x} "${ROOT}"usr/${x}
+    done
+
+    for x in bin sbin lib; do
+        edo ln -snTf usr/host/${x} "${ROOT}${x}"
+    done
+
+    edo ln -snTf bin "${ROOT}"usr/host/sbin
 }
 

@@ -1,0 +1,50 @@
+# Copyright 2015 Saleem Abdulrasool <compnerd@compnerd.org>
+# Distributed under the terms of the GNU General Public License v2
+
+require gnu [ suffix=bz2 subdir=gcc-${PV} pn=gcc ]
+
+if [[ ${PV} == *_pre* ]] ; then
+    DOWNLOADS="ftp://gcc.gnu.org/pub/gcc/snapshots/$(ever range 1-2)-${PV##*_pre}/gcc-$(ever range 1-2)-${PV##*_pre}.tar.bz2"
+fi
+
+SUMMARY="GNU OpenMP Runtime (libgomp)"
+LICENCES="GPL-2"
+SLOT="$(ever range 1-2)"
+
+MYOPTIONS="
+    doc
+    (
+        linguas:
+            be ca da de el eo es fi fr hr id ja nl ru sr sv tr uk vi zh_CN zh_TW
+    )
+"
+
+DEPENDENCIES="
+    build:
+        sys-apps/texinfo[>4.4]
+        sys-devel/gettext
+        doc? (
+            app-doc/doxygen[>=1.5.1]
+            dev-libs/libxml2
+            dev-util/xsltproc
+            media-gfx/graphviz
+        )
+"
+
+REMOTE_IDS="freecode:gcc"
+
+UPSTREAM_RELEASE_NOTES="${HOMEPAGE}gcc-${SLOT}/"
+UPSTREAM_CHANGELOG="${UPSTREAM_RELEASE_NOTES}changes.html"
+
+DEFAULT_SRC_CONFIGURE_PARAMS=( --enable-clocale=gnu --disable-libstdcxx-pch --disable-vtable-verify )
+
+ECONF_SOURCE="${WORKBASE}/gcc-${PV/_p?(re)/-}/libgomp"
+WORK="${WORKBASE}/build/$(exhost --target)/libgomp"
+
+libgomp_src_unpack() {
+    default
+    mkdir -p "${WORK}"
+}
+
+export_exlib_phases src_unpack
+

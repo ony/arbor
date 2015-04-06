@@ -1,6 +1,9 @@
 # Copyright 2007 Bryan Østergaard
 # Distributed under the terms of the GNU General Public License v2
 
+# need autotools to not hate --docdir and --datarootdir
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.15 ] ]
+
 SUMMARY="C++ wrapper for PCRE library."
 HOMEPAGE="http://www.daemon.de/PCRE"
 DOWNLOADS="http://www.daemon.de/idisk/Apps/${PN}/${PNV}.tar.gz"
@@ -14,10 +17,9 @@ DEPENDENCIES="
     build+run:
         dev-libs/pcre"
 
-DEFAULT_SRC_CONFIGURE_PARAMS=( --hates=docdir )
+src_prepare() {
+    sed -i -e 's:(prefix):(DESTDIR)/usr/share:' doc/Makefile.am
 
-src_configure() {
-    default
-    sed -i -e 's:(prefix):(DESTDIR)/usr/share:' doc/Makefile
+    autotools_src_prepare
 }
 

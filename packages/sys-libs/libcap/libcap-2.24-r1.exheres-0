@@ -6,6 +6,7 @@ require libcap
 PLATFORMS="~amd64 ~arm ~x86"
 
 DEFAULT_SRC_PREPARE_PATCHES=(
+    "${FILES}"/${PNV}-fix-makefile-variables.patch
     "${FILES}"/0001-Change-the-location-we-include-linux-xattr.h.patch
 )
 

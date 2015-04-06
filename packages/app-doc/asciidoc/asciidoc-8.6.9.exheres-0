@@ -44,7 +44,7 @@ src_install() {
 
     # fix shebang
     edo sed -i -e "s:#!/usr/bin/env python:#!/usr/bin/env python2:" \
-        "${IMAGE}"/usr/bin/{asciidoc,a2x}.py
+        "${IMAGE}"/usr/$(exhost --target)/bin/{asciidoc,a2x}.py
 
     if option vim-syntax; then
         insinto /usr/share/vim/vimfiles/syntax

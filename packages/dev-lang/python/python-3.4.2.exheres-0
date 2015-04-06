@@ -7,8 +7,8 @@ PLATFORMS="~amd64 ~arm ~x86"
 
 DEPENDENCIES+="
     build+run:
-        app-arch/xz[multibuild_c:*(-)?]
-        dev-libs/expat[multibuild_c:*(-)?]
+        app-arch/xz
+        dev-libs/expat
         !dev-lang/python:3.2[=3.2.5] [[
             description = [ Man file collision ]
         ]]
@@ -16,7 +16,7 @@ DEPENDENCIES+="
 
 DEFAULT_SRC_CONFIGURE_PARAMS+=( '--with-system-expat' )
 
-test_one_multibuild() {
+src_test() {
     local DISABLE_TESTS
     # test_install_lib: (test_distuils) has problems with path resolution
     # test_gdb: never-ending threads running under gdb
@@ -40,7 +40,7 @@ test_one_multibuild() {
     # for test_asyncore
     esandbox allow_net "unix:${PWD%/}"'/build/test_python_*/@test_*_tmp'
 
-    python-build_test_one_multibuild
+    python-build_src_test
 
     esandbox disallow_net "unix:${PWD%/}"'/build/test_python_*/@test_*_tmp'
     esandbox disallow_net "unix:${TEMP%/}"'/test_logging_*.sock'

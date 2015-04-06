@@ -1,14 +1,16 @@
 # Copyright 2007 Bryan Østergaard
 # Distributed under the terms of the GNU General Public License v2
 
-require sourceforge [ suffix=tar.xz ] easy-multibuild
+# Need autotools for AC_FUNC_MALLOC, AC_FUNC_REALLOC
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 ] ]
+require sourceforge [ suffix=tar.xz ]
 
 SUMMARY="Tool for generating lexical scanners"
 
 LICENCES="BSD-2"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS="parts: binaries development documentation libraries"
 
 DEPENDENCIES="
     build:
@@ -25,5 +27,19 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
     --enable-nls
     --disable-static
 )
+DEFAULT_SRC_COMPILE_PARAMS=( AR="${AR}" )
 DEFAULT_SRC_TEST_PARAMS=( -j1 )
 
+AT_M4DIR=( m4 )
+
+src_install() {
+    # install wants to rebuild this just because of autoreconf
+    edo touch doc/flex.pdf
+
+    default
+
+    expart binaries /usr/$(exhost --target)/bin
+    expart development /usr/$(exhost --target)/include
+    expart documentation /usr/share/{doc,info,man}
+    expart libraries /usr/$(exhost --target)/lib
+}

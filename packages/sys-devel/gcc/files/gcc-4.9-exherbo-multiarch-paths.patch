@@ -1,0 +1,151 @@
+From 14058aefcdb75e4753a21be89c282c84a5e8c1fa Mon Sep 17 00:00:00 2001
+From: Saleem Abdulrasool <compnerd@compnerd.org>
+Date: Sun, 1 Mar 2015 17:47:15 -0800
+Subject: [PATCH] exherbo multi-arch paths
+
+---
+ gcc/config/arm/linux-eabi.h | 19 +++++++++++++++++++
+ gcc/config/arm/linux-elf.h  | 16 ++++++++++++++++
+ gcc/config/i386/linux.h     | 13 +++++++++++++
+ gcc/config/i386/linux64.h   | 18 ++++++++++++++++++
+ gcc/config/rs6000/linux64.h | 16 ++++++++++++++++
+ 5 files changed, 82 insertions(+)
+
+diff --git a/gcc/config.gcc b/gcc/config.gcc
+index d6c8153..f200541 100644
+--- a/gcc/config.gcc
++++ b/gcc/config.gcc
+@@ -236,7 +236,7 @@ default_gnu_indirect_function=no
+ target_gtfiles=
+ need_64bit_hwint=
+ need_64bit_isa=
+-native_system_header_dir=/usr/include
++native_system_header_dir=/usr/${target}/include
+ target_type_format_char='@'
+ 
+ # Don't carry these over build->host->target.  Please.
+diff --git a/gcc/config/arm/linux-eabi.h b/gcc/config/arm/linux-eabi.h
+index f1f3448..4858402 100644
+--- a/gcc/config/arm/linux-eabi.h
++++ b/gcc/config/arm/linux-eabi.h
+@@ -120,3 +120,22 @@
+ #define CLEAR_INSN_CACHE(BEG, END) not_used
+ 
+ #define ARM_TARGET2_DWARF_FORMAT (DW_EH_PE_pcrel | DW_EH_PE_indirect)
++
++/* exherbo specific paths */
++/*
++ * TODO(compnerd) drop the exherbo vendor.  There is no need for the vendor
++ * specific here.
++ */
++
++#undef STANDARD_STARTFILE_PREFIX_1
++#define STANDARD_STARTFILE_PREFIX_1 "/usr/arm-exherbo-linux-gnueabi/lib/"
++
++#undef STANDARD_STARTFILE_PREFIX_2
++#define STANDARD_STARTFILE_PREFIX_2 "/arm-exherbo-linux-gnueabi/lib/"
++
++#undef GLIBC_DYNAMIC_LINKER_SOFT_FLOAT
++#define GLIBC_DYNAMIC_LINKER_SOFT_FLOAT "/usr/arm-exherbo-linux-gnueabi/lib/ld-linux.so.3"
++
++#undef GLIBC_DYNAMIC_LINKER_HARD_FLOAT
++#define GLIBC_DYNAMIC_LINKER_HARD_FLOAT "/usr/arm-exherbo-linux-gnueabi/lib/ld-linux-armhf.so.3"
++
+diff --git a/gcc/config/arm/linux-elf.h b/gcc/config/arm/linux-elf.h
+index 2bf361a..b290992 100644
+--- a/gcc/config/arm/linux-elf.h
++++ b/gcc/config/arm/linux-elf.h
+@@ -118,3 +118,19 @@
+ /* Add .note.GNU-stack.  */
+ #undef NEED_INDICATE_EXEC_STACK
+ #define NEED_INDICATE_EXEC_STACK	1
++
++/* exherbo specific paths */
++/*
++ * TODO(compnerd) consider dropping this hunk.  arm-linux-elf is not really
++ * recommended and unused in exherbo, making this part of the patch superfluous
++ */
++
++#undef STANDARD_STARTFILE_PREFIX_1
++#define STANDARD_STARTFILE_PREFIX_1 "/usr/arm-unknown-linux-elf/lib/"
++
++#undef STANDARD_STARTFILE_PREFIX_2
++#define STANDARD_STARTFILE_PREFIX_2 "/arm-unknown-linux-elf/lib/"
++
++#undef GLIBC_DYNAMIC_LINKER
++#define GLIBC_DYNAMIC_LINKER "/usr/arm-unknown-linux-elf/lib/ld-linux.so.2"
++
+diff --git a/gcc/config/i386/linux.h b/gcc/config/i386/linux.h
+index 1fb1e03..1c52bce 100644
+--- a/gcc/config/i386/linux.h
++++ b/gcc/config/i386/linux.h
+@@ -21,3 +21,16 @@ along with GCC; see the file COPYING3.  If not see
+ 
+ #define GNU_USER_LINK_EMULATION "elf_i386"
+ #define GLIBC_DYNAMIC_LINKER "/lib/ld-linux.so.2"
++
++/* exherbo specific paths */
++
++#undef STANDARD_STARTFILE_PREFIX_1
++#define STANDARD_STARTFILE_PREFIX_1 "/usr/i686-pc-linux-gnu/lib/"
++
++#undef STANDARD_STARTFILE_PREFIX_2
++#define STANDARD_STARTFILE_PREFIX_2 "/i686-pc-linux-gnu/lib/"
++
++#undef GLIBC_DYNAMIC_LINKER
++#define GLIBC_DYNAMIC_LINKER "/usr/i686-pc-linux-gnu/lib/ld-linux.so.2"
++
++
+diff --git a/gcc/config/i386/linux64.h b/gcc/config/i386/linux64.h
+index a90171e..9e80c0a 100644
+--- a/gcc/config/i386/linux64.h
++++ b/gcc/config/i386/linux64.h
+@@ -30,3 +30,21 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+ #define GLIBC_DYNAMIC_LINKER32 "/lib/ld-linux.so.2"
+ #define GLIBC_DYNAMIC_LINKER64 "/lib64/ld-linux-x86-64.so.2"
+ #define GLIBC_DYNAMIC_LINKERX32 "/libx32/ld-linux-x32.so.2"
++
++/* exherbo specific paths */
++
++#undef STANDARD_STARTFILE_PREFIX_1
++#define STANDARD_STARTFILE_PREFIX_1 "/usr/x86_64-pc-linux-gnu/lib/"
++
++#undef STANDARD_STARTFILE_PREFIX_2
++#define STANDARD_STARTFILE_PREFIX_2 "/x86_64-pc-linux-gnu/lib/"
++
++#undef GLIBC_DYNAMIC_LINKER32
++#define GLIBC_DYNAMIC_LINKER32 "/usr/x86_64-pc-linux-gnu/lib/ld-linux.so.2"
++
++#undef GLIBC_DYNAMIC_LINKER64
++#define GLIBC_DYNAMIC_LINKER64 "/usr/x86_64-pc-linux-gnu/lib/ld-linux-x86-64.so.2"
++
++#undef GLIBC_DYNAMIC_LINKERX32
++#define GLIBC_DYNAMIC_LINKERX32 "/usr/x86_64-pc-linux-gnu/lib/ld-linux-x32.so.2"
++
+diff --git a/gcc/config/rs6000/linux64.h b/gcc/config/rs6000/linux64.h
+index 0ca05d2..6242339 100644
+--- a/gcc/config/rs6000/linux64.h
++++ b/gcc/config/rs6000/linux64.h
+@@ -581,3 +581,19 @@ extern int dot_symbols;
+ #undef TARGET_FLOAT_EXCEPTIONS_ROUNDING_SUPPORTED_P
+ #define TARGET_FLOAT_EXCEPTIONS_ROUNDING_SUPPORTED_P \
+   rs6000_linux_float_exceptions_rounding_supported_p
++
++
++/* exherbo specifc paths */
++
++#undef STANDARD_STARTFILE_PREFIX_1
++#define STANDARD_STARTFILE_PREFIX_1 "/usr/powerpc64-unknown-linux-gnueabi/lib/"
++
++#undef STANDARD_STARTFILE_PREFIX_2
++#define STANDARD_STARTFILE_PREFIX_2 "/powerpc64-unknown-linux-gnueabi/lib/"
++
++#undef GNU_USER_DYNAMIC_LINKER32
++#define GNU_USER_DYNAMIC_LINKER32 "/usr/powerpc64-unknown-linux-gnueabi/lib/ld.so.1"
++
++#undef GNU_USER_DYNAMIC_LINKER64
++#define GNU_USER_DYNAMIC_LINKER64 "/usr/powerpc64-unknown-linux-gnueabi/lib/ld64.so.1"
++
+-- 
+2.3.1
+

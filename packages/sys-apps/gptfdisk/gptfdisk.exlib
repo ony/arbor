@@ -28,16 +28,17 @@ DEPENDENCIES="
         sys-apps/util-linux[>=2.16.1]
 "
 
+DEFAULT_SRC_COMPILE_PARAMS=( CXX=${CXX} )
+
 gptfdisk_src_test() {
     edo ./gdisk_test.sh
 }
 
 gptfdisk_src_install() {
-    into /
-    dosbin cgdisk
-    dosbin fixparts
-    dosbin gdisk
-    dosbin sgdisk
+    dobin cgdisk
+    dobin fixparts
+    dobin gdisk
+    dobin sgdisk
     doman *.8
     emagicdocs
 }

@@ -38,12 +38,12 @@ DEPENDENCIES="
         dev-lang/perl:*
 "
 
-DEFAULT_SRC_COMPILE_PARAMS=( CC="${CC}" )
+DEFAULT_SRC_COMPILE_PARAMS=( AR=${AR} CC="${CC}" )
 
 DEFAULT_SRC_INSTALL_PARAMS=(
-    PREFIX=/usr
+    PREFIX=/usr/$(exhost --target)
     MANDIR=/usr/share/man
-    LIBDIR=/usr/${LIBDIR}
+    SBINDIR=/usr/$(exhost --target)/bin
 )
 
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=(

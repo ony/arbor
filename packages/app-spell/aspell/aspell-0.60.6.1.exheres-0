@@ -38,7 +38,7 @@ src_install() {
     default
 
     # install ispell/aspell compatibility scripts
-    exeinto /usr/bin
+    exeinto /usr/$(exhost --target)/bin
     newexe scripts/ispell ispell-aspell
     newexe scripts/spell spell-aspell
 

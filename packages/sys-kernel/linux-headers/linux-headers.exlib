@@ -1,5 +1,6 @@
 # Copyright 2007 Bryan Østergaard
 # Copyright 2010 Sterling X. Winter <replica@exherbo.org>
+# Copyright 2012 Saleem Abdulrasool <compnerd@compnerd.org>
 # Distributed under the terms of the GNU General Public License v2
 
 require kernel
@@ -19,11 +20,11 @@ HOMEPAGE="http://www.kernel.org"
 
 LICENCES="GPL-2"
 SLOT="0"
-MYOPTIONS="platform: amd64 arm x86"
+MYOPTIONS=""
 
-WORK=${WORKBASE}/linux-${PV}
+RESTRICT="test"
 
-# FIXME: Need to sanitize headers at some point
+WORK="${WORKBASE}/linux-${PV}"
 
 linux-headers_pkg_pretend() {
     if ! kernel_version_at_least ${PV} ; then
@@ -34,35 +35,41 @@ linux-headers_pkg_pretend() {
 }
 
 linux-headers_src_compile() {
-    # Fix ARCH to match linux-headers values
-    local x myarch platform_to_arch_map=(
-        #alpha ia64 mips ppc64:powerpc sparc
-        amd64:x86_64
-        arm
-        x86:i386
-    )
-    for x in "${platform_to_arch_map[@]}"; do
-        if option platform:${x%:*}; then
-            ARCH=${x#*:}
-            break
-        fi
-    done
-    [[ -z ${ARCH} ]] && die "Your platform is not supported by linux-headers.exlib"
-
-    emake mrproper
-    emake headers_check
+    :
 }
 
+# TODO(?) need to sanitize headers at some point
 linux-headers_src_install() {
-    emake INSTALL_HDR_PATH="${IMAGE}"/usr headers_install
+    local _host_architectures=(
+        arm-exherbo-linux-gnueabi:arm
+        i686-pc-linux-gnu:i386
+        x86_64-pc-linux-gnu:x86_64
+    )
 
-    # remove installed .install and ..install.cmd files
-    edo rm "${IMAGE}"/**/.install "${IMAGE}"/**/..install.cmd
+    local arch= entry= target=$(exhost --target)
 
-    # scsi.h is installed by sys-libs/glibc
-    ever at_least 2.6.35 || edo rm "${IMAGE}"/usr/include/scsi/scsi.h
+    for entry in "${_host_architectures[@]}" ; do
+        [[ ${entry%:*} == ${target} ]] || continue
+        arch=${entry#*:}
+        break
+    done
+
+    [[ -n ${arch} ]] || die "unsupported host '${target}', please update linux-headers.exlib"
+
+    edo mkdir -p "${IMAGE}/usr/${target}"
+    edo emake                                     \
+        ARCH=${arch}                              \
+        CROSS_COMPILE=$(exhost --tool-prefix)     \
+        HOSTCC="${CHOST}-gcc"                     \
+        INSTALL_HDR_PATH="${IMAGE}/usr/${target}" \
+        headers_install
+    edo find "${IMAGE}/usr/${target}/include" -name '.install' -delete -or \
+                                              -name '..install.cmd' -delete
+    #
+    # scsi.h is now provided by sys-libs/glibc
+    ever at_least 2.6.35 || edo rm "${IMAGE}"/usr/${target}/include/scsi/scsi.h
 
     # nuke empty directory
-    ever at_least 3.8 && edo rmdir "${IMAGE}"/usr/include/uapi
+    ever at_least 3.8 && edo rmdir "${IMAGE}"/usr/${target}/include/uapi
 }
 

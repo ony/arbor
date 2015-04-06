@@ -3,7 +3,7 @@
 # Based in part upon 'ghostscript-8.62.ebuild' from Gentoo, which is:
 #     Copyright 1999-2008 Gentoo Foundation.
 
-require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.15 ] ] easy-multibuild [ multiunpack=true ]
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.15 ] ]
 
 SUMMARY="An interpreter for the PostScript language and for PDF"
 HOMEPAGE="http://${PN}.com"
@@ -18,7 +18,6 @@ MYOPTIONS="
     idn
     gtk [[ requires = [ X ] ]]
     X
-    multibuild_c: 32 64
 "
 
 # system openjpeg cannot be used; see http://bugs.ghostscript.com/show_bug.cgi?id=694449
@@ -27,23 +26,23 @@ DEPENDENCIES="
         virtual/pkg-config
         X? ( x11-proto/xextproto )
     build+run:
-        dev-libs/expat[multibuild_c:*(-)?]
+        dev-libs/expat
         dev-libs/libpaper
-        media-libs/fontconfig[multibuild_c:*(-)?]
-        media-libs/freetype:2[>=2.4.2][multibuild_c:*(-)?]
+        media-libs/fontconfig
+        media-libs/freetype:2[>=2.4.2]
         media-libs/jbig2dec
-        media-libs/jpeg:=[multibuild_c:*(-)?]
-        media-libs/lcms2[>=2.5][multibuild_c:*(-)?]
-        media-libs/libpng:=[>=1.5.7][multibuild_c:*(-)?]
-        media-libs/tiff[multibuild_c:*(-)?]
-        sys-libs/zlib[multibuild_c:*(-)?]
-        cups? ( net-print/cups[multibuild_c:*(-)?] )
-        dbus? ( sys-apps/dbus[multibuild_c:*(-)?] )
-        gtk? ( x11-libs/gtk+:3[multibuild_c:*(-)?] )
-        idn? ( net-dns/libidn[multibuild_c:*(-)?] )
+        media-libs/jpeg:=
+        media-libs/lcms2[>=2.5]
+        media-libs/libpng:=[>=1.5.7]
+        media-libs/tiff
+        sys-libs/zlib
+        cups? ( net-print/cups )
+        dbus? ( sys-apps/dbus )
+        gtk? ( x11-libs/gtk+:3 )
+        idn? ( net-dns/libidn )
         X? (
-            x11-libs/libXext[multibuild_c:*(-)?]
-            x11-libs/libXt[multibuild_c:*(-)?]
+            x11-libs/libXext
+            x11-libs/libXt
         )
     run:
         app-text/poppler-data[>=0.4.4] [[ note = [ CMap encoding data ] ]]
@@ -54,7 +53,7 @@ DEFAULT_SRC_PREPARE_PATCHES=(
     "${FILES}"/${PN}-9.16-system-zlib.patch
 )
 
-prepare_one_multibuild() {
+src_prepare() {
     edo rm -r ./{cups/libs,expat,freetype,jbig2dec,jpeg{,xr},lcms2,libpng,tiff,zlib}
 
     # remove internal CMaps (CMaps from poppler-data are used instead)
@@ -74,11 +73,13 @@ prepare_one_multibuild() {
 
     default
     eautoreconf
+    nonfatal edo automake -afi
     edo cd ./ijs
     eautoreconf
+    edo cp -a install-sh ..
 }
 
-configure_one_multibuild() {
+src_configure() {
     local FONTPATH
     for path in \
         /usr/share/fonts/X11/urw-fonts \
@@ -120,24 +121,24 @@ configure_one_multibuild() {
         --disable-static
 }
 
-compile_one_multibuild() {
+src_compile() {
     emake so all
 
     edo cd ./ijs
     emake
 }
 
-install_one_multibuild() {
+src_install() {
     emake -j1 DESTDIR="${IMAGE}" install-so install
 
     edo cd ./ijs
     default
 
     if option !X && option !gtk; then
-        rmdir "${IMAGE}"/usr/${LIBDIR}/${PN}{/${PV},}
+        rmdir "${IMAGE}"/usr/$(exhost --target)/lib/${PN}{/${PV},}
     fi
 
     # use gsc which links to libgs
-    edo mv -f "${IMAGE}"/usr/bin/gs{c,}
+    edo mv -f "${IMAGE}"/usr/$(exhost --target)/bin/gs{c,}
 }
 

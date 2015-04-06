@@ -1,7 +1,7 @@
 # Copyright 2008 Kim Højgaard-Hansen
 # Distributed under the terms of the GNU General Public License v2
 
-require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 1.12 ] ] easy-multibuild
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 1.12 ] ]
 require sourceforge [ suffix=tar.gz ]
 
 SUMMARY="The Multiple Network Graphics reference library"
@@ -9,15 +9,12 @@ SUMMARY="The Multiple Network Graphics reference library"
 LICENCES="ZLIB"
 SLOT="0"
 PLATFORMS="~amd64 ~x86"
-MYOPTIONS="
-    lcms
-    multibuild_c: 32 64
-"
+MYOPTIONS="lcms"
 
 DEPENDENCIES="
     build+run:
-        media-libs/jpeg:=[multibuild_c:*(-)?]
-        sys-libs/zlib[multibuild_c:*(-)?]
+        media-libs/jpeg:=
+        sys-libs/zlib
         lcms? ( media-libs/lcms )
 "
 

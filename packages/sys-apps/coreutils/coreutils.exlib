@@ -5,7 +5,7 @@
 
 require gnu [ suffix=xz ] alternatives
 
-export_exlib_phases src_prepare src_configure src_test src_test_expensive src_install
+export_exlib_phases src_prepare src_configure src_test src_test_expensive src_install pkg_preinst
 
 SUMMARY="Core file, shell and text utilities expected to be on any system."
 
@@ -96,6 +96,8 @@ coreutils_src_test() {
     esandbox allow /dev/full
 
     default
+
+    esandbox disallow /dev/full
 }
 
 coreutils_src_test_expensive() {
@@ -111,34 +113,43 @@ coreutils_src_test_expensive() {
 coreutils_src_install() {
     default
 
-    local binfiles=(
-        basename cat chgrp chmod chown cp chroot cut date df dir dirname du echo env expr false head
-        kill ln ls mkdir mkfifo mknod mktemp mv pwd readlink rm rmdir seq sleep sort stty sync tail
-        touch tr true tty uname vdir wc yes
-    )
-
-    dodir /bin
-    for binfile in "${binfiles[@]}" ; do
-        edo mv "${IMAGE}"/usr/bin/${binfile} "${IMAGE}"/bin/${binfile}
-        edo dosym /bin/${binfile} /usr/bin/${binfile}
-    done
-
     # Provided by sys-process/procps
-    edo rm "${IMAGE}"/usr/bin/uptime
+    edo rm "${IMAGE}"/usr/$(exhost --target)/bin/uptime
     edo rm "${IMAGE}"/usr/share/man/man1/uptime.1
 
     # NOTE(compnerd) do not provide a link for hostname.  /bin is part of ${PATH} by default, and
     # allows for overloading of hostname from inetutils for a more feature-rich version if users
     # desire.  Install the manpage as hostname.coreutils to avoid conflicting with inetutils since
     # this command does not really support any arguments.
-    edo mv "${IMAGE}/usr/bin/hostname" "${IMAGE}/bin/hostname"
-    edo mv "${IMAGE}/usr/share/man/man1/hostname.1" "${IMAGE}/usr/share/man/man1/hostname.coreutils.1"
+    edo mv "${IMAGE}/usr/$(exhost --target)/bin/hostname" "${IMAGE}/usr/$(exhost --target)/bin/hostname.${PN}"
+    edo mv "${IMAGE}/usr/share/man/man1/hostname.1" "${IMAGE}/usr/share/man/man1/hostname.${PN}.1"
 
     alternatives_for hostname coreutils 100 \
-                     /usr/bin/hostname /bin/hostname \
-                     /usr/share/man/man1/hostname.1 /usr/share/man/man1/hostname.coreutils.1
+        /usr/$(exhost --target)/bin/hostname /usr/$(exhost --target)/bin/hostname.${PN} \
+        /usr/share/man/man1/hostname.1 /usr/share/man/man1/hostname.${PN}.1
 
     insinto /etc
     newins src/dircolors.hin DIR_COLORS
+}
+
+coreutils_pkg_preinst() {
+    exhost --is-native -q || return
+
+    # NOTE(compnerd) preserve legacy paths for paludis
+    if [[ $(readlink -f "${ROOT##/}"/bin) == ${ROOT##/}/bin ]]; then
+        for bin in echo pwd rm readlink env; do
+            if [[ ! -e ${ROOT}/usr/$(exhost --target)/bin/${bin} ]]; then
+                nonfatal edo cp "${ROOT}bin/${bin}" "${ROOT}usr/$(exhost --target)/bin/${bin}"
+            fi
+            nonfatal edo ln -sf ../usr/$(exhost --target)/bin/${bin} "${ROOT}bin/${bin}" || \
+                eerror ln -sf ../usr/$(exhost --target)/bin/${bin} "${ROOT}bin/${bin}" failed
+        done
+    fi
+    if [[ $(readlink -f "${ROOT##/}"/usr/bin) == ${ROOT##/}/usr/bin ]]; then
+        for bin in echo env readlink; do
+            nonfatal edo ln -sf ../$(exhost --target)/bin/${bin} "${ROOT}usr/bin/${bin}" || \
+                eerror nonfatal edo ln -sf ../$(exhost --target)/bin/${bin##*/} "${ROOT}usr/bin/${bin}" failed
+        done
+    fi
 }
 

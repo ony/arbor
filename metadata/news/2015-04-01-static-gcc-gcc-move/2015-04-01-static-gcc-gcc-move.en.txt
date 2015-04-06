@@ -1,0 +1,14 @@
+Title: static-gcc/gcc move
+Author: Benedikt Morbach <moben@exherbo.org>
+Content-Type: text/plain
+Posted: 2015-04-01
+Revision: 1
+News-Item-Format: 1.0
+Display-If-Installed: sys-devel/static-gcc
+
+sys-devel/static-gcc has been moved back to sys-devel/gcc.
+
+To update, please run:
+    cave resolve sys-devel/gcc --preserve-world --permit-uninstall sys-devel/static-gcc --reinstall-dependents-of sys-devel/static-gcc
+
+Make sure that the threads option on sys-devel/gcc matches the one on your installed sys-devel/static-gcc

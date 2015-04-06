@@ -98,12 +98,12 @@ gem_install_abi() {
 
     if [[ -d ${IMAGE}/${vendor_gem_dir}/bin ]]; then
         local alternatives=( _${PN} ${abi} ${abi} ) path exe
-        dodir /usr/bin
+        dodir /usr/$(exhost --target)/bin
         edo pushd "${IMAGE}"
         for path in ${vendor_gem_dir#/}/bin/* ; do
             exe=$(basename ${path})
-            alternatives+=( /usr/bin/${exe} /usr/bin/${exe}${abi} )
-            dosym ../../${path} /usr/bin/${exe}${abi}
+            alternatives+=( /usr/$(exhost --target)/bin/${exe} /usr/$(exhost --target)/bin/${exe}${abi} )
+            dosym ../../${path} /usr/$(exhost --target)/bin/${exe}${abi}
         done
         edo popd
         alternatives_for "${alternatives[@]}"

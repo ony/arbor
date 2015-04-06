@@ -28,20 +28,12 @@ MYOPTIONS=""
 DEPENDENCIES=""
 
 src_install() {
-    # Although the Makefile has an install target, it installs everything
-    # into /usr and includes which.
-
-    into /
-    dobin tempfile run-parts
-    dosbin installkernel
-
-    into /usr
-    dosbin savelog
+    dobin tempfile run-parts installkernel savelog
 
     # needed by run-parts (Gentoo bug #352326)
     keepdir /etc/kernel/postinst.d
 
-    doman tempfile.1 run-parts.8 savelog.8 installkernel.8
-    dodoc debian/{changelog,control}
+    doman "${WORK}"/{tempfile.1,run-parts.8,savelog.8,installkernel.8}
+    dodoc "${WORK}"/debian/{changelog,control}
 }
 

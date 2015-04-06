@@ -37,14 +37,20 @@ DEPENDENCIES="
 
 BUGS_TO="alip@exherbo.org"
 
+DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}"/${PN}-allow-override-of-ar-ranlib.patch )
+
 src_prepare() {
+    local host=$(exhost --target)
+
     default
 
     cat > conf.mk << EOF
 CC = $(option dietlibc diet) ${CC}
 CFLAGS = -Wall -Wextra -Wshadow $(option !debug -DNDEBUG) ${CFLAGS}
-BINDIR = /bin
-SBINDIR = /sbin
+AR = ${AR}
+RANLIB = ${RANLIB}
+BINDIR = /usr/${host}/bin
+SBINDIR = /usr/${host}/sbin
 MANDIR = /usr/share/man
 EOF
 }

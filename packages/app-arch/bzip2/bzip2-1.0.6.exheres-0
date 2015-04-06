@@ -2,7 +2,7 @@
 # Copyright 2008, 2009 Ingmar Vanhassel
 # Distributed under the terms of the GNU General Public License v2
 
-require flag-o-matic easy-multibuild
+require flag-o-matic
 
 SUMMARY="Freely available, patent free, high-quality data compressor"
 HOMEPAGE="http://www.bzip.org"
@@ -11,7 +11,7 @@ DOWNLOADS="http://www.bzip.org/${PV}/${PNV}.tar.gz"
 LICENCES="( bzip2-withdocs ) [[ last-checked = 1.0.6 ]]"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS="parts: binaries development documentation libraries"
 
 DEPENDENCIES=""
 
@@ -20,22 +20,27 @@ DEFAULT_SRC_INSTALL_EXTRA_DOCS=( bzip2.txt )
 src_prepare() {
     default
 
+    # All does not include tests!
+    edo sed -e '/^all:/s/\<test\>//'                                \
+            -i Makefile
+
     # Respect variables from the environment
     edo sed \
         -e 's|^AR=|AR ?=|' \
         -e 's|^CC=|CC ?=|' \
+        -e 's|^RANLIB=|RANLIB ?=|' \
         -e 's|^CFLAGS=|CFLAGS +=|' \
         -e '/^CFLAGS/s/-O.//' \
         -e '/^CFLAGS/s/-g//' \
         -e 's|^LDFLAGS=|LDFLAGS +=|' \
-        -e 's|^RANLIB=|RANLIB ?=|' \
+        -e 's|^PREFIX=|PREFIX ?=|' \
         -i Makefile Makefile-libbz2_so
 
     # Use CFLAGS and LDFLAGS properly
     edo sed \
         -e '/^all/a\	$(CC) $(CFLAGS) -c bzip2.c -o bzip2.o' \
-        -e 's/$(CC) -shared/& $(LDFLAGS)/' \
-        -e '/$(CC).*\.so/s:CFLAGS:LDFLAGS:' \
+        -e 's/$(CC) -shared/& $(CFLAGS) $(LDFLAGS)/' \
+        -e '/$(CC).*\.so/s:$(CFLAGS):$(CFLAGS) $(LDFLAGS):' \
         -i Makefile-libbz2_so
 
     # Update version
@@ -43,56 +48,44 @@ src_prepare() {
             -i bzip2.1 bzip2.txt Makefile-libbz2_so manual.{html,ps,xml}
 
     # Fix up paths
-    edo sed -e 's:$(PREFIX)/lib:$(PREFIX)/$(LIBDIR):g' \
-            -e 's:$(PREFIX)/include:$(PREFIX)/usr/include:g' \
-            -e 's:$(PREFIX)/man:$(PREFIX)/usr/share/man:g' \
+    edo sed -e 's:$(PREFIX)/bin:$(DESTDIR)$(PREFIX)/bin:g'          \
+            -e 's:$(PREFIX)/lib:$(DESTDIR)$(PREFIX)/lib:g'          \
+            -e 's:$(PREFIX)/include:$(DESTDIR)$(PREFIX)/include:g'  \
+            -e 's:$(PREFIX)/man:$(DESTDIR)$(DATADIR)/man:g'         \
             -i Makefile
 }
 
-configure_prepare_one_multibuild() {
-    edo mkdir -p "${WORKBASE}/${MULTIBUILD_CLASS}/${MULTIBUILD_TARGET}"
-    edo cp "${WORK}"/* "${WORKBASE}/${MULTIBUILD_CLASS}/${MULTIBUILD_TARGET}"
+src_compile() {
+    edo emake "${tools[@]}" -f Makefile-libbz2_so
+    edo emake "${tools[@]}" -f Makefile
 }
 
-compile_one_multibuild() {
-    multibuild-m32-cc "${MULTIBUILD_TARGET}"
+src_install() {
+    local versioned=
 
-    local myemake=(
-        CC="${CC}"
-        AR="${AR}"
-        RANLIB="${RANLIB}"
-    )
+    einstall DESTDIR="${IMAGE}" PREFIX=/usr/$(exhost --target) DATADIR=/usr/share
+    emagicdocs
 
-    emake "${myemake[@]}" -f Makefile-libbz2_so
-    emake "${myemake[@]}" $(multibuild_default_target C || echo libbz2.a)
-}
+    into /usr/$(exhost --target)
 
-test_one_multibuild() {
-    multibuild_default_target C && default
-}
+    # static library
+    LIBDIR=lib dolib libbz2.a
 
-install_one_multibuild() {
-    if multibuild_default_target C; then
-        emake PREFIX="${IMAGE}" LIBDIR=${LIBDIR} MANPREFIX="${IMAGE}"/usr/share install
-        emagicdocs
-    else
-        into /
-        dolib.a libbz2.a
-    fi
-
-    # Install shared libraries to /${LIBDIR}
-    into /
-    dolib.so libbz2.so.${PV}
-    for v in libbz2.so{,.{$(ever major 1),$(ever range 1-2)}} ; do
-        dosym libbz2.so.${PV} /${LIBDIR}/${v}
+    # shared library
+    LIBDIR=lib dolib.so libbz2.so.${PV}
+    for versioned in libbz2.so{,.{$(ever major 1),$(ever range 1-2)}} ; do
+        dosym libbz2.so.${PV} /usr/$(exhost --target)/lib/${versioned}
     done
 
-    if multibuild_default_target C; then
-        # Fix symlinks linking to ${IMAGE}
-        dosym bzgrep /bin/bzegrep
-        dosym bzgrep /bin/bzfgrep
-        dosym bzmore /bin/bzless
-        dosym bzdiff /bin/bzcmp
-    fi
+    # binaries
+    dosym bzgrep /usr/$(exhost --target)/bin/bzegrep
+    dosym bzgrep /usr/$(exhost --target)/bin/bzfgrep
+    dosym bzmore /usr/$(exhost --target)/bin/bzless
+    dosym bzdiff /usr/$(exhost --target)/bin/bzcmp
+
+    expart binaries /usr/$(exhost --target)/bin
+    expart development /usr/$(exhost --target)/include
+    expart documentation /usr/share/{doc,man}
+    expart libraries /usr/$(exhost --target)/lib
 }
 

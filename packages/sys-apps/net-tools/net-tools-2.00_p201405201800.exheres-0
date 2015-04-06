@@ -16,6 +16,11 @@ DEPENDENCIES="
         sys-devel/gettext
 "
 
+DEFAULT_SRC_INSTALL_PARAMS=(
+    BINDIR=/usr/$(exhost --target)/bin
+    SBINDIR=/usr/$(exhost --target)/bin
+)
+
 src_configure() {
     yes "" | edo ./configure.sh config.in
     edo sed -i -e 's:I18N 0:I18N 1:' config.h
@@ -23,14 +28,14 @@ src_configure() {
 
 src_install() {
     default
-    dosym ../bin/route /sbin/route
-    edo mv "${IMAGE}"/bin/{hostname,domainname}
+
+    edo mv "${IMAGE}"/usr/$(exhost --target)/bin/{hostname,domainname}
     for i in {dns,yp,nis}domainname; do
-        dosym domainname /bin/${i}
+        dosym domainname /usr/$(exhost --target)/bin/${i}
     done
 
     alternatives_for hostname net-tools 100 \
-                     /usr/bin/hostname /bin/domainname \
-                     /usr/share/man/man1/hostname.1 /usr/share/man/man1/hostname.net-tools.1
+        /usr/$(exhost --target)/bin/hostname /usr/$(exhost --target)/bin/domainname \
+        /usr/share/man/man1/hostname.1 /usr/share/man/man1/hostname.net-tools.1
 }
 

@@ -1,6 +1,8 @@
 # Copyright 2007 Bryan Østergaard
 # Distributed under the terms of the GNU General Public License v2
 
+# Need autotools for AC_FUNC_MALLOC, AC_FUNC_REALLOC
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 ] ]
 require sourceforge [ suffix=tar.gz ]
 
 SUMMARY="Fuser, killall, pstree and peekfd utilities"
@@ -12,13 +14,12 @@ UPSTREAM_RELEASE_NOTES="${HOMEPAGE}/changelog.html"
 LICENCES="GPL-2"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS=""
+MYOPTIONS="parts: binaries documentation"
 
 DEPENDENCIES=""
 
+DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}"/${PN}-0001-Honour-CPPFLAGS.patch )
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --bindir=/bin
-    --enable-ipv6
     --enable-nls
     --disable-harden-flags
 )
@@ -26,14 +27,13 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
 src_install() {
     default
 
-    # Add /usr/bin symlinks
-    dodir /usr/bin
     for fname in fuser killall pstree peekfd ; do
-        if [[ -f ${IMAGE}/bin/${fname} ]]; then
-            dosym /bin/${fname} /usr/bin/${fname}
-        else
+        if [[ ! -f ${IMAGE}/usr/$(exhost --target)/bin/${fname} ]]; then
             edo rm "${IMAGE}"/usr/share/man/man1/${fname}.1
         fi
     done
+
+    expart binaries /usr/$(exhost --target)/bin
+    expart documentation /usr/share/{doc,man}
 }
 

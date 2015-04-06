@@ -50,10 +50,10 @@ guile_src_install() {
     local alternatives=( "${PN}" "${SLOT}" "${SLOT}" )
 
     local bin binaries=(
-        /usr/bin/guile-config
-        /usr/bin/guile-tools
-        /usr/bin/guile
-        /usr/bin/guile-snarf
+        /usr/$(exhost --target)/bin/guile-config
+        /usr/$(exhost --target)/bin/guile-tools
+        /usr/$(exhost --target)/bin/guile
+        /usr/$(exhost --target)/bin/guile-snarf
     )
     for bin in ${binaries[@]}; do
         alternatives+=( ${bin} ${bin##*/}-${SLOT} )

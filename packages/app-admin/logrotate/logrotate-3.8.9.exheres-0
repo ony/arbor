@@ -48,7 +48,7 @@ src_compile() {
 
 src_install() {
     insinto /usr
-    dosbin logrotate
+    dobin logrotate
     doman logrotate.8
     dodoc examples/*
 

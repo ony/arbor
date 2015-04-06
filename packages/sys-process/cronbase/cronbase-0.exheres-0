@@ -23,7 +23,7 @@ BUGS_TO="ssiloti@gmail.com"
 WORK=${WORKBASE}
 
 src_install() {
-    newsbin "${WORKBASE}"/vixie-cron-4.1-run-crons run-crons
+    newbin "${WORKBASE}"/vixie-cron-4.1-run-crons run-crons
 
     keepdir /etc/cron.d
 

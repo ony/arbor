@@ -4,7 +4,7 @@
 
 require python bash-completion flag-o-matic zsh-completion
 
-export_exlib_phases pkg_setup src_configure src_compile src_test src_install
+export_exlib_phases pkg_setup src_configure src_compile src_test src_install pkg_preinst
 
 SUMMARY="Paludis, the one true package mangler"
 HOMEPAGE="http://paludis.exherbo.org"
@@ -142,5 +142,29 @@ paludis_src_install() {
     dozshcompletion zsh-completion/_cave
     keepdir /var/lib/exherbo/news
     edo rm -rf "${IMAGE}"/var/lib/gentoo
+}
+
+paludis_pkg_preinst() {
+    # Do nothing if the current paludis doesn't know cross yet
+    [[ $(type -t exhost) == function ]] || return
+
+    for dir in /usr/lib{,64,exec}/paludis; do
+        newdir=${dir/usr\/lib@(64|)/usr/$(exhost --target)/lib}
+
+        if exhost --is-native -q && [[ $(readlink -f "${ROOT##/}${dir}") == ${ROOT##/}${dir}*([^/]) ]]; then
+            if [[ ! -e ${ROOT}${newdir} && -e ${ROOT}${dir} ]]; then
+                # keep these around to avoid breaking paludis after the old version that expects them in /usr is
+                # unmerged, because that version is still running for the remainder of the resolution
+                # they get cleaned up below the next time paludis is rebuilt.
+                #
+                # we can't use symlinks because sydbox will resolve them and then disallow exec of
+                # paludis_pipe_command (and maybe others?)
+                edo find "${ROOT}${dir}" -exec touch {} \+
+            elif [[ -e ${ROOT}${newdir} && -e ${ROOT}${dir} ]]; then
+                # cleanup directories that were left around for migrating to /usr/${target} (see above)
+                edo rm -rf "${ROOT}${dir}"
+            fi
+        fi
+    done
 }
 

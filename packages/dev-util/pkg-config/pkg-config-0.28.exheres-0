@@ -10,35 +10,94 @@ DOWNLOADS="http://pkgconfig.freedesktop.org/releases/${PNV}.tar.gz"
 LICENCES="GPL-2"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS=""
+MYOPTIONS="
+    targets:
+        arm-exherbo-linux-gnueabi
+        i686-pc-linux-gnu
+        x86_64-pc-linux-gnu
+"
 
+# TODO(zlin):
+#   build+run:
+#       target:$host? ( dev-libs/glib:2[>=2.16][hosts:*(-)?] )
 DEPENDENCIES="
     build+run:
         dev-libs/glib:2[>=2.16]
 "
 
-DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --disable-static
-    --without-internal-glib
-)
+ECONF_SOURCE=${WORK}
+
+DEFAULT_SRC_CONFIGURE_PARAMS=( '--disable-static' '--without-internal-glib' )
 
 src_configure() {
-    # workaround pkg-config needing itself during configure
-    export GLIB_CFLAGS="-I/usr/include/glib-2.0 -I/usr/${LIBDIR}/glib-2.0/include"
-    export GLIB_LIBS="-lglib-2.0"
+    local target=
 
-    default
+    for target in ${CROSS_COMPILE_TARGETS} ; do
+        local pc_path=/usr/${target}/lib/pkgconfig:/usr/share/pkgconfig
+        local PKG_CONFIG=$(type -P pkg-config)
+
+        if option !targets:${target} ; then
+            echo "    Cross-Compile Target: ${target} (disabled)"
+            continue
+        fi
+
+        echo "    Cross-Compile Target: ${target}"
+
+        edo mkdir -p "${WORKBASE}/build/${target}"
+        edo cd "${WORKBASE}/build/${target}"
+
+        # PKG_CONFIG_ALLOW_SYSTEM_LIBS=true makes sure -L/usr/lib gets added during
+        # migration to /usr/host/lib
+            PKG_CONFIG_ALLOW_SYSTEM_LIBS=true                                \
+            PKG_CONFIG=${PKG_CONFIG:-${CHOST}-pkg-config}                    \
+            PKG_CONFIG_LIBDIR=/usr/${CHOST}/lib/pkgconfig:/usr/lib/pkgconfig \
+        econf                                                                \
+            --with-pc-path=${pc_path}                                        \
+            --with-system-include-path=/usr/${target}/include                \
+            --with-system-library-path=/usr/${target}/lib                    \
+            --disable-indirect-deps                                          \
+            --disable-host-tool                                              \
+            --program-prefix=${target}-
+    done
+}
+
+src_compile() {
+    local target=
+
+    for target in ${CROSS_COMPILE_TARGETS} ; do
+        if option !targets:${target} ; then
+            echo "    Cross-Compile Target: ${target} (disabled)"
+            continue
+        fi
+
+        echo "    Cross-Compile Target: ${target}"
+
+        edo cd "${WORKBASE}/build/${target}"
+        default
+    done
 }
 
 src_install() {
-    local alternatives=( ${PN} ${PN} 10 )
+    local alternatives=(
+        pkg-config ${PN} 10
 
-    default
-
-    alternatives+=(
-        /usr/bin/${PN} ${PN}_${PN}
-        /usr/share/aclocal/pkg.m4 pkg_${PN}.m4
+        /usr/share/aclocal/pkg.m4   pkg.m4.${PN}
     )
+    local target=
+
+    for target in ${CROSS_COMPILE_TARGETS} ; do
+        if option !targets:${target} ; then
+            echo "    Cross-Compile Target: ${target} (disabled)"
+            continue
+        fi
+
+        echo "    Cross-Compile Target: ${target}"
+
+        edo cd "${WORKBASE}/build/${target}"
+        emake -j1 DESTDIR="${IMAGE}" install
+
+        alternatives+=( /usr/${CHOST}/bin/${target}-${PN} ${target}-${PN}.pkg-config )
+    done
 
     alternatives_for "${alternatives[@]}"
 }

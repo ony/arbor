@@ -3,7 +3,7 @@
 # Based in part upon 'libgcrypt-1.4.0-r1.ebuild' from Gentoo, which is:
 #     Copyright 1999-2008 Gentoo Foundation.
 
-require easy-multibuild flag-o-matic
+require flag-o-matic
 
 SUMMARY="General purpose crypto library based on the code used in GnuPG"
 HOMEPAGE="http://www.gnupg.org"
@@ -17,14 +17,14 @@ LICENCES="
 "
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS=""
 
 DEPENDENCIES="
     build+run:
-        dev-libs/libgpg-error[>=1.11][multibuild_c:*(-)?]
+        dev-libs/libgpg-error[>=1.11]
 "
 
-configure_one_multibuild() {
+src_configure() {
     # FIXME(compnerd) using -Os on recent x86_64 CPUs (e.g. IvyBridge) results in a broken
     # libgcrypt.  Cursory inspection indicates either a mis-aligned SIMD access or an invalid memory
     # reference.  This is detected via test/basic which fails.
@@ -33,23 +33,15 @@ configure_one_multibuild() {
     # --enable-static - cryptsetup wants static
     # --disable-padlock-support - Suggested by upstream, also see Gentoo #201917
     # --without-capabilities - declared as Alpha code in configure.ac
+    # ac_cv_sys_symbol_underscore=no - NOTE(compnerd) ELF does not have a global symbol prefix unlike COFF
+    # (which is default on *BSD) this should be safe to unconditionally set until we support non-ELF targets
+    CC_FOR_BUILD=$(exhost --build)-gcc \
     econf \
         --enable-static \
         --disable-O-flag-munging \
         --disable-padlock-support \
         --without-capabilities \
-        $(if ! multibuild_default_target C; then
-            echo "--with-gpg-error-prefix=/usr/${CHOST}"
-        else
-            echo '--with-gpg-error-prefix=/usr'
-        fi)
-}
-
-install_one_multibuild() {
-    default
-    if ! multibuild_default_target C; then
-        dodir "/usr/${CHOST}/bin"
-        edo mv "${IMAGE}"/usr/bin/"${PN}"-config "${IMAGE}"/usr/"${CHOST}"/bin
-    fi
+        --with-gpg-error-prefix=/usr/$(exhost --target) \
+        ac_cv_sys_symbol_underscore=no
 }
 

@@ -15,12 +15,13 @@ MYOPTIONS=""
 
 DEPENDENCIES=""
 
-DEFAULT_SRC_CONFIGURE_PARAMS=( --prefix=/ )
+DEFAULT_SRC_CONFIGURE_PARAMS=( --prefix=/usr/$(exhost --target) )
 
 src_install() {
     default
     alternatives_for "gzip" "${PN}" "100"       \
-                     "/bin/${PN}"                       "${PN}.gzip"  \
-                     "/bin/gunzip"                      "${PN}.gunzip"  \
-                     "/usr/share/man/man1/${PN}.1"      "${PN}.gzip.1"
+                     "/usr/$(exhost --target)/bin/${PN}"  "${PN}.gzip"  \
+                     "/usr/$(exhost --target)/bin/gunzip" "${PN}.gunzip"  \
+                     "/usr/share/man/man1/${PN}.1"        "${PN}.gzip.1"
 }
+

@@ -29,7 +29,7 @@ BUGS_TO="will@worrbase.com philantrop@exherbo.org"
 DEFAULT_SRC_INSTALL_PARAMS=(
     "MILTER_SOVER=${PV}"
     "MANROOT=/usr/share/man/man"
-    "LIBDIR=/usr/${LIBDIR}"
+    "LIBDIR=/usr/$(exhost --target)/lib"
 )
 
 DEFAULT_SRC_PREPARE_PATCHES=(
@@ -41,11 +41,14 @@ DEFAULT_SRC_PREPARE_PATCHES=(
 WORK=${WORKBASE}/${SENDMAIL_PNV}
 
 src_compile() {
-    edo sed -e "s:@@CFLAGS@@:${CFLAGS}:" \
+    edo sed -e "s:@@AR@@:$(exhost --target)-ar:" \
+            -e "s:@@CFLAGS@@:${CFLAGS}:" \
             -e "s:@@LDFLAGS@@:${LDFLAGS}:" \
             -e "s:@@CC@@:${CC}:" \
-            -e "s:@@LD@@:${LD}:" "${FILES}/exherbo.config.m4" > \
-            devtools/Site/site.config.m4
+            -e "s:@@LD@@:${LD}:" \
+            -e "s:@@INCLUDEDIR@@:/usr/$(exhost --target)/include:" \
+            -e "s:@@LIBDIR@@:/usr/$(exhost --target)/lib:" \
+            "${FILES}/exherbo.config.m4" > devtools/Site/site.config.m4
 
     edo pushd "${WORK}/libmilter"
     edo sh Build MILTER_SOVER=${PV}
@@ -54,7 +57,7 @@ src_compile() {
 
 src_install() {
     edo pushd "${WORK}/libmilter"
-    edo mkdir -p "${IMAGE}/usr/${LIBDIR}"
+    edo mkdir -p "${IMAGE}"/usr/$(exhost --target)/lib
     default
     dodoc -r docs
     edo popd

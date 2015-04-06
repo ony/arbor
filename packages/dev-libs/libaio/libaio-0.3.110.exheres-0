@@ -3,8 +3,6 @@
 # Based in part upon 'libaio-0.3.107.ebuild' from Gentoo, which is:
 #     Copyright 1999-2009 Gentoo Foundation
 
-require easy-multibuild [ multiunpack=true ]
-
 SUMMARY="Asynchronous input/output library that uses the kernels native interface"
 DESCRIPTION="
 AIO enables even a single application thread to overlap I/O operations with other
@@ -21,7 +19,7 @@ BUGS_TO="philantrop@exherbo.org"
 LICENCES="LGPL-2"
 SLOT="0"
 PLATFORMS="~amd64 ~x86"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS=""
 
 # Full tests (check) want to mount things, need root. Instead we only run partcheck.
 #RESTRICT="test userpriv"
@@ -36,13 +34,9 @@ DEFAULT_SRC_PREPARE_PATCHES=(
     "${FILES}"/${PN}-0.3.110-cppflags.patch
 )
 
-prepare_one_multibuild() {
-    default
+DEFAULT_SRC_INSTALL_PARAMS=( prefix="/usr/$(exhost --target)" )
 
-    edo sed -i "/^libdir=/s:lib$:${LIBDIR}:" src/Makefile Makefile
-}
-
-test_one_multibuild() {
+src_test() {
     emake -j1 partcheck
 
 #    esandbox allow /dev/loop
@@ -52,7 +46,7 @@ test_one_multibuild() {
 #    edo popd >/dev/null
 }
 
-install_one_multibuild() {
+src_install() {
     default
 
     doman man/*

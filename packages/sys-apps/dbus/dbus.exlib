@@ -9,7 +9,7 @@ else
     DOWNLOADS="http://dbus.freedesktop.org/releases/${PN}/${PNV}.tar.gz"
 fi
 
-require flag-o-matic easy-multibuild systemd-service
+require flag-o-matic systemd-service
 
 export_exlib_phases src_configure src_compile src_test src_install
 
@@ -29,14 +29,7 @@ BUGS_TO="philantrop@exherbo.org"
 
 LICENCES="|| ( GPL-2 AFL-2.1 )"
 SLOT="0"
-MYOPTIONS="
-    baselayout
-    debug
-    doc
-    systemd
-    X
-    multibuild_c: 32 64
-"
+MYOPTIONS="baselayout debug doc systemd X"
 
 DEPENDENCIES="
     build:
@@ -48,17 +41,17 @@ DEPENDENCIES="
         doc? ( app-doc/doxygen )
         X? ( x11-proto/xproto )
     build+run:
-        dev-libs/expat[>=1.95.8][multibuild_c:*(-)?]
+        dev-libs/expat[>=1.95.8]
         dev-libs/glib:2[>=2.36]
         sys-apps/skeleton-filesystem-layout[>=0.5.4]
         group/messagebus
         group/plugdev
         user/messagebus
-        systemd? ( sys-apps/systemd[>=209][multibuild_c:*(-)?] )
+        systemd? ( sys-apps/systemd[>=209] )
         X? (
-            x11-libs/libICE[multibuild_c:*(-)?]
-            x11-libs/libSM[multibuild_c:*(-)?]
-            x11-libs/libX11[multibuild_c:*(-)?]
+            x11-libs/libICE
+            x11-libs/libSM
+            x11-libs/libX11
         )
     suggestion:
         !systemd? (
@@ -75,7 +68,10 @@ DEFAULT_SRC_INSTALL_EXTRA_DOCS=(
 
 DEFAULT_SRC_INSTALL_EXTRA_PREFIXES=( doc/ )
 
-configure_one_multibuild() {
+dbus_src_configure() {
+    # whitelist bind() to /tmp/dbus-fake-socket-*
+    esandbox allow_net 'unix-abstract:/tmp/dbus-fake-socket-*'
+
     # Testing code (--enable-tests) disabled since building with tests support
     # creates an insecure (sic upstream), non-production use library
     econf                                                \
@@ -101,32 +97,24 @@ configure_one_multibuild() {
         $(option_with X x)                               \
         $(option_with systemd systemdsystemunitdir ${SYSTEMDSYSTEMUNITDIR}) \
         $(option_with systemd systemduserunitdir ${SYSTEMDUSERUNITDIR})
-}
 
-dbus_src_configure() {
-    # whitelist bind() to /tmp/dbus-fake-socket-*
-    esandbox allow_net 'unix-abstract:/tmp/dbus-fake-socket-*'
-    easy-multibuild_src_configure
     esandbox disallow_net 'unix-abstract:/tmp/dbus-fake-socket-*'
 }
 
 dbus_src_compile() {
     # get backtraces from applications
     append-flags -rdynamic
-    easy-multibuild_src_compile
+    default
 }
 
 dbus_src_test() {
-    DBUS_VERBOSE=1 easy-multibuild_src_test
-}
-
-install_one_multibuild() {
-    default
-    keepdir /usr/${LIBDIR}/dbus-1.0/test
+    DBUS_VERBOSE=1 default
 }
 
 dbus_src_install() {
-    easy-multibuild_src_install
+    local host=$(exhost --target)
+
+    default
 
     if ! option doc ; then
         [[ -d "${IMAGE}"/usr/share/doc/${PNVR}/api ]] && edo rmdir "${IMAGE}"/usr/share/doc/${PNVR}/api
@@ -143,11 +131,15 @@ dbus_src_install() {
     keepdir \
             /etc/dbus-1/session.d/              \
             /etc/dbus-1/system.d/               \
-            /usr/libexec/dbus-1                 \
+            /usr/${host}/libexec/dbus-1         \
             /usr/share/dbus-1/services          \
             /usr/share/dbus-1/system-services   \
-            /var/lib/dbus
+            /var/lib/dbus                       \
+            /usr/${host}/lib/dbus-1.0/test
 
     edo rmdir "${IMAGE}"/var/run/{dbus,}
+
+    # hardcodes the path to the setuid helper that is used to launch system services
+    exhost --is-native -q || edo rm "${IMAGE}"/etc/dbus-1/system.conf
 }
 

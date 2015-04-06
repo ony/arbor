@@ -23,7 +23,6 @@ DEPENDENCIES="
 DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}"/83a95bd8c8561875b948cadd417c653dbe7ef2e2.patch )
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --bindir=/bin
     --enable-nls
     --enable-perl-regexp
 )

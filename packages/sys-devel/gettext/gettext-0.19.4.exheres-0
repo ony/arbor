@@ -1,7 +1,7 @@
 # Copyright 2007, 2009 Bryan Østergaard <kloeri@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require gnu [ suffix=gz ] elisp-optional easy-multibuild
+require gnu [ suffix=gz ] elisp-optional
 
 SUMMARY="GNU localization utilties"
 
@@ -13,16 +13,15 @@ MYOPTIONS="
     emacs
     examples
     openmp
-    multibuild_c: 32 64
 "
 
 DEPENDENCIES="
     build:
         sys-devel/gcc:*[openmp?]
     build+run:
-        dev-libs/libxml2:2.0[multibuild_c:*(-)?]
-        sys-libs/ncurses[multibuild_c:*(-)?]
-        acl? ( sys-apps/acl[multibuild_c:*(-)?] )
+        dev-libs/libxml2:2.0
+        sys-libs/ncurses
+        acl? ( sys-apps/acl )
 "
 
 DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}"/${PN}-0.18-sydbox.patch )
@@ -49,7 +48,8 @@ DEFAULT_SRC_CONFIGURE_OPTION_ENABLES=(
 DEFAULT_SRC_CONFIGURE_OPTION_WITHS=( emacs )
 
 src_install() {
-    easy-multibuild_src_install
+    default
+
     option emacs && elisp-install-site-file
     option examples || edo rm -r "${IMAGE}"/usr/share/doc/${PNVR}/examples
     edo rm -r "${IMAGE}"/usr/share/doc/${PNVR}/html/{csharpdoc,javadoc2}

@@ -1,0 +1,109 @@
+# Copyright 2015 Benedikt Morbach <moben@exherbo.org>
+# Distributed under the terms of the GNU General Public License v2
+
+
+# An exlib to slot libraries and provide symlinks for each installed version.
+# Mainly intended for use by things like libstdc++, which must never break.
+#
+# This is different from "ordinary" slotting, where only one version of the library is kept around
+
+
+require alternatives
+
+# argument: at least one library name (without the .so)
+#
+# replaces dynamic library symlinks with alternatives-light.
+# Assuming libfoo.so.1.0.0 and libfoo.so.1.1.0 are installed using this exlib, it ensures that both
+# stay available and libfoo.so as well as libfoo.so.1 point to the newest applicable version.
+# if libfoo.so.2{,.0.0} is added, the others stay around, but libfoo.so will point to libfoo.so.2
+#
+symlink_dynamic_libs() {
+    local names=()
+    local name target_so provider_so
+
+    [[ ${#} -lt 1 ]] && die "${FUNCNAME} takes at least 1 argument"
+
+    names=( "${@}" )
+
+    edo pushd "${IMAGE}"/usr/$(exhost --target)/lib
+
+    for name in "${names[@]}"; do
+        # In each iteration, create a link from ${target_so} to the longer versioned ${provider_so}.
+        # Use alternatives-light so that the symlinks always point to the latest version that
+        # is reachable from the current prefix. There might be a libfoo.so.1 and libfoo.so.2,
+        # but libfoo.so will point to the latter.
+        # ${target_so}      ${provider_so}
+        #                   libfoo.so
+        # libfoo.so         libfoo.so.1
+        # libfoo.so.1       libfoo.so.1.0.0
+        for provider_so in "${name}".so*(.+([0-9])); do
+            [[ -e ${provider_so} ]] || break
+
+            if [[ -n "${target_so}" ]]; then
+                edo rm "${target_so}"
+                alternatives_for "_$(exhost --target)_${target_so}" "${provider_so##*.so.}" "${provider_so##*.so.}" \
+                    /usr/$(exhost --target)/lib/"${target_so}" "${provider_so}"
+            fi
+            target_so=${provider_so}
+        done
+    done
+
+    edo popd
+}
+
+# argument: at least one library name (without the .so)
+#
+# convenience function to slott the longest versioned .so with the given name in ${IMAGE}, using
+# alternatives-light and the ${SLOT} as provider and priority
+slot_dynamic_libs() {
+    local names=() all=()
+    local ext full_so name
+
+    [[ ${#} -lt 1 ]] && die "${FUNCNAME} takes at least 1 arguments"
+
+    names=( "${@}" )
+
+    edo pushd "${IMAGE}"/usr/$(exhost --target)/lib
+
+    for name in "${names[@]}"; do
+        all=( "${name}".so*(.+([0-9])) )
+        full_so=${all[-1]}
+        [[ -e ${full_so} ]] || continue
+
+        ext=${full_so#${name}.}
+
+        # rename fully versioned .so using ${SLOT} and symlink
+        alternatives_for "_$(exhost --target)_${full_so}" ${SLOT} ${SLOT} \
+            /usr/$(exhost --target)/lib/${full_so} ${name}-${SLOT}.${ext}
+
+    done
+
+    edo popd
+}
+
+# argument: at least one library name (without the .la or .a)
+#
+# convenience function to slot static libraries with the given name in ${IMAGE}, using
+# alternatives-light and the ${SLOT} as provider and priority
+slot_static_libs() {
+    local names=() alternatives=() extensions=( a la )
+    local name ext
+
+    [[ ${#} -lt 1 ]] && die "${FUNCNAME} takes at least 1 argument"
+
+    names=( "${@}" )
+
+    for name in "${names[@]}"; do
+        alternatives=()
+        for ext in "${extensions[@]}"; do
+            [[ -e "${IMAGE}/usr/$(exhost --target)/lib/${name}.${ext}" || \
+               -e "${IMAGE}/usr/$(exhost --target)/lib/${name}-${SLOT}.${ext}" ]] && \
+                alternatives+=(
+                    "/usr/$(exhost --target)/lib/${name}.${ext}" "${name}-${SLOT}.${ext}"
+                )
+        done
+
+       [[ ${#alternatives[@]} -gt 0 ]] && alternatives_for "_$(exhost --target)_${name}" "${SLOT}" "${SLOT}" "${alternatives[@]}"
+    done
+}
+

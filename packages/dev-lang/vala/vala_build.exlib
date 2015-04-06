@@ -61,8 +61,8 @@ vala_build_src_install() {
         fi
     fi
 
-    alternatives+=( /usr/bin/vala valac-${SLOT} )
-    for src in usr/bin/{valac,vala-gen-introspect,vapigen,vapicheck}-${SLOT} \
+    alternatives+=( /usr/$(exhost --target)/bin/vala valac-${SLOT} )
+    for src in usr/$(exhost --target)/bin/{valac,vala-gen-introspect,vapigen,vapicheck}-${SLOT} \
                usr/share/man/man1/*-${SLOT}.1 ; do
         target=${src/-${SLOT}}
         alternatives+=( /${target} ${src##*/} )

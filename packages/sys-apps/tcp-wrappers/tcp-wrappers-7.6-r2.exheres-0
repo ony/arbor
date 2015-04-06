@@ -5,8 +5,6 @@
 
 MY_PNV="${PNV//-/_}"
 
-require easy-multibuild [ multiunpack=true work=${MY_PNV} ]
-
 PATCH_VER="1.1"
 SUMMARY="TCP Wrappers"
 HOMEPAGE="ftp://ftp.porcupine.org/pub/security/index.html"
@@ -16,50 +14,46 @@ DOWNLOADS="ftp://ftp.porcupine.org/pub/security/${MY_PNV}.tar.gz
 LICENCES="tcp_wrappers"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="
-    multibuild_c: 32 64
-"
+MYOPTIONS=""
 DEPENDENCIES=""
 
-prepare_one_multibuild() {
-    PATCHDIR="${WORKBASE}/${MULTIBUILD_CLASS}/${MULTIBUILD_TARGET}/${PV}"
+WORK=${WORKBASE}/${MY_PNV}
+
+src_prepare() {
+    PATCHDIR="${WORKBASE}/${PV}"
 
     expatch "${PATCHDIR}/${PNV}-makefile.patch" "${PATCHDIR}/${PNV}-shared.patch" "${PATCHDIR}/generic"
     expatch -p2 "${PATCHDIR}"/${PNV}-ipv6-1.14.diff
 }
 
-compile_one_multibuild() {
+src_compile() {
     local myconf="-DHAVE_WEAKSYMS"
     myconf+=" -DINET6=1 -Dss_family=__ss_family -Dss_len=__ss_len"
 
-    emake \
-        REAL_DAEMON_DIR=/usr/sbin \
-        EXHERBO_OPT="${myconf}" \
-        MAJOR=0 MINOR=${PV:0:1} REL=${PV:2:3} \
-        config-check
-
-    emake \
-        REAL_DAEMON_DIR=/usr/sbin \
-        EXHERBO_OPT="${myconf}" \
-        MAJOR=0 MINOR=${PV:0:1} REL=${PV:2:3} \
-        linux
+    for target in config-check linux; do
+        emake                                             \
+            REAL_DAEMON_DIR=/usr/$(exhost --target)/bin   \
+            EXHERBO_OPT="${myconf}"                       \
+            MAJOR=0 MINOR=${PV:0:1} REL=${PV:2:3}         \
+            ${target}
+    done
 }
 
-install_one_multibuild() {
-    dosbin tcpd tcpdchk tcpdmatch safe_finger try-from
+src_install() {
+    dodir /usr/$(exhost --target)/lib
+
+    dobin tcpd tcpdchk tcpdmatch safe_finger try-from
 
     doman *.[358]
     dosym hosts_access.5 /usr/share/man/man5/hosts.allow.5
     dosym hosts_access.5 /usr/share/man/man5/hosts.deny.5
 
-    insinto /usr/include
+    insinto /usr/$(exhost --target)/include
     doins tcpd.h
 
-    into /usr
     dolib.a libwrap.a
     newlib.so libwrap.so libwrap.so.0.${PV}
-    dosym libwrap.so.0.${PV} /usr/${LIBDIR}/libwrap.so.0
-    dosym libwrap.so.0 /usr/${LIBDIR}/libwrap.so
+    dosym libwrap.so.0.${PV} /usr/$(exhost --target)/lib/libwrap.so.0
 
     dodoc BLURB CHANGES DISCLAIMER README* "${FILES}"/hosts.allow.example
 }

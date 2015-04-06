@@ -30,6 +30,11 @@ src_prepare() {
 
     edo sed "/^CCOPT=/s|-g|${CFLAGS}|" -i Makefile
     edo sed "/^CCOPT=/s|$| ${CFLAGS}|" -i Modules/Makefile
+
+    # Hack: fix upstream being weird
+    edo echo > '-lcrypto'
+    edo echo > '-lresolv'
+    edo echo > '-lsysfs'
 }
 
 src_compile() {
@@ -41,19 +46,10 @@ src_compile() {
 }
 
 src_install() {
-    into /
-    dobin ping
-    edo chmod +s "${IMAGE}"/bin/ping
-
-    into /usr
-    dosbin arping clockdiff ipg rarpd rdisc tftpd tracepath
-
-    into /
-    dobin ping6
-    edo chmod +s "${IMAGE}"/bin/ping6
-
-    into /usr
-    dosbin tracepath6
+    into /usr/$(exhost --target)
+    dobin ping{,6}
+    edo chmod +s "${IMAGE}"/usr/$(exhost --target)/bin/ping{,6}
+    dobin arping clockdiff ipg rarpd rdisc tftpd tracepath{,6}
 
     edo rm doc/traceroute6.8
 

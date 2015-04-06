@@ -27,7 +27,7 @@ DEFAULT_SRC_PREPARE_PATCHES=(
     -p1 "${FILES}/${PN}-glibc-2.10.1.patch"
 )
 DEFAULT_SRC_COMPILE_PARAMS=( CFLAGS0="${CFLAGS}" LDFLAGS0="${LDFLAGS}" STRIP="" )
-DEFAULT_SRC_INSTALL_PARAMS=( BINDIR="${IMAGE}/usr/bin" MAN1DIR="${IMAGE}/usr/share/man/man1" MAN5DIR="${IMAGE}/usr/share/man/man5" install )
+DEFAULT_SRC_INSTALL_PARAMS=( BINDIR="${IMAGE}/usr/$(exhost --target)/bin" MAN1DIR="${IMAGE}/usr/share/man/man1" MAN5DIR="${IMAGE}/usr/share/man/man5" install )
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=( FEATURES )
 
 src_prepare() {
@@ -41,10 +41,10 @@ src_prepare() {
 src_install() {
     default
 
-    edo chown root:mail "${IMAGE}"/usr/bin/procmail
-    edo chown :mail "${IMAGE}"/usr/bin/lockfile
-    edo chmod 6755 "${IMAGE}"/usr/bin/procmail
-    edo chmod 2755 "${IMAGE}"/usr/bin/lockfile
+    edo chown root:mail "${IMAGE}"/usr/$(exhost --target)/bin/procmail
+    edo chown :mail "${IMAGE}"/usr/$(exhost --target)/bin/lockfile
+    edo chmod 6755 "${IMAGE}"/usr/$(exhost --target)/bin/procmail
+    edo chmod 2755 "${IMAGE}"/usr/$(exhost --target)/bin/lockfile
 
     dodir /var/spool/${PN}/
     keepdir /var/spool/${PN}/

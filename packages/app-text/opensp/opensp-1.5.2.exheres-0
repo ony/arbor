@@ -32,6 +32,7 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
     --enable-nls
     --datadir=/usr/share/sgml/${PNV}
     --hates=docdir
+    --hates=datarootdir
 )
 DEFAULT_SRC_CONFIGURE_OPTION_ENABLES=( "doc doc-build" )
 DEFAULT_SRC_COMPILE_PARAMS=( pkgdocdir=/usr/share/doc/${PNVR} )

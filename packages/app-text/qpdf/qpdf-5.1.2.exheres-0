@@ -1,7 +1,7 @@
 # Copyright 2012-2014 Timo Gurr <tgurr@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require sourceforge [ suffix=tar.gz ] easy-multibuild [ multiunpack=true ]
+require sourceforge [ suffix=tar.gz ]
 
 SUMMARY="C++ library and set of programs that inspect and manipulate the structure of PDF files"
 DESCRIPTION="
@@ -16,19 +16,17 @@ UPSTREAM_DOCUMENTATION="${HOMEPAGE}/files/${PN}-manual.html [[ lang = en ]]"
 LICENCES="Artistic-2.0"
 SLOT="0"
 PLATFORMS="~amd64 ~x86"
-MYOPTIONS="
-    multibuild_c: 32 64
-"
+MYOPTIONS=""
 
 DEPENDENCIES="
     build+run:
-        dev-libs/pcre[multibuild_c:*(-)?]
-        sys-libs/zlib[multibuild_c:*(-)?]
+        dev-libs/pcre
+        sys-libs/zlib
     test:
         app-text/ghostscript
 "
 
-configure_one_multibuild() {
+src_configure() {
     econf \
         --disable-static \
         $(expecting_tests && echo '--enable-test-compare-images' || echo '--disable-test-compare-images')

@@ -5,7 +5,7 @@ myexparam importance=${PV}
 
 exparam -v IMPORTANCE importance
 
-require alternatives easy-multibuild
+require alternatives
 
 export_exlib_phases src_install
 
@@ -14,46 +14,33 @@ HOMEPAGE="http://www.exherbo.org"
 DOWNLOADS=""
 
 LICENCES="GPL-2"
-MYOPTIONS="multibuild_c: ( 32 64 )"
+MYOPTIONS=""
 
 SLOT="${PV}"
 
 DEPENDENCIES="
     run:
-        dev-lang/python:*[=${SLOT}*][multibuild_c:*(-)?]
+        dev-lang/python:*[=${SLOT}*]
 "
 
 BUGS_TO="keruspe@exherbo.org"
 
 WORK="${WORKBASE}"
 
-install_one_multibuild() {
-    alternatives+=(
-        /usr/${LIBDIR}/pkgconfig/python.pc python${SLOT}.pc
-    )
-
-    if ! multibuild_default_target C; then
-        alternatives+=(
-            /usr/${CHOST}/bin/python python${SLOT}
-            /usr/${CHOST}/bin/python-config python${SLOT}-config
-        )
-    fi
-}
-
 eclectic-python_src_install() {
+    target=$(exhost --target)
     alternatives=(
         python ${SLOT} ${IMPORTANCE}
-        /usr/bin/2to3 2to3-${SLOT}
-        /usr/bin/idle idle${SLOT}
-        /usr/bin/pydoc pydoc${SLOT}
-        /usr/bin/python python${SLOT}
-        /usr/bin/python-config python${SLOT}-config
+        /usr/${target}/bin/2to3 2to3-${SLOT}
+        /usr/${target}/bin/idle idle${SLOT}
+        /usr/${target}/bin/pydoc pydoc${SLOT}
+        /usr/${target}/bin/python python${SLOT}
+        /usr/${target}/bin/python-config python${SLOT}-config
+        /usr/${target}/lib/pkgconfig/python.pc python${SLOT}.pc
         /usr/share/man/man1/python.1 python${SLOT}.1
     )
 
-    ever at_least 3 && alternatives+=( /usr/bin/pyvenv pyvenv-${SLOT} )
-
-    easy-multibuild_src_install
+    ever at_least 3 && alternatives+=( /usr/${target}/bin/pyvenv pyvenv-${SLOT} )
 
     alternatives_for "${alternatives[@]}"
 }

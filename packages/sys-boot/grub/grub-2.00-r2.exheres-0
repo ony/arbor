@@ -4,6 +4,7 @@
 require bash-completion
 require gnu [ suffix=xz ]
 require flag-o-matic
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 ] ]
 
 SUMMARY="GRUB (Grand Unified Boot) bootloader"
 
@@ -51,9 +52,12 @@ DEPENDENCIES="
 "
 
 DEFAULT_SRC_PREPARE_PATCHES=(
+        "${FILES}"/${PNV}-find-ar-program-that-fits-with-host-argument.patch
         "${FILES}"/${PNV}-Fix-build-with-FreeType-2.5.1.patch
     -p0 "${FILES}"/grub-2-gets.patch
 )
+
+AT_M4DIR=( m4 )
 
 pkg_setup() {
     # grub2 should be compiled with -Os, other optimizations may result in oversized core images
@@ -63,7 +67,10 @@ pkg_setup() {
 src_configure() {
     myconf=(
         "CPP=${CC} -E"
-        --prefix=/
+
+        # TODO(compnerd) use cc instead of gcc
+        "BUILD_CC=$(exhost --build)-gcc"
+
         --with-bootdir=/boot
         --with-grubdir=grub
         --enable-cache-stats

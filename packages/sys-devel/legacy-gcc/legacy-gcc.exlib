@@ -1,0 +1,454 @@
+# Copyright 2007 Bryan Østergaard <kloeri@exherbo.org>
+# Copyright 2008, 2009, 2010 Ingmar Vanhassel <ingmar@exherbo.org>
+# Copyright 2008-2010 Bo Ørsted Andresen <zlin@exherbo.org>
+# Copyright 2009,2011-2014 Saleem Abdulrasool <compnerd@compnerd.org>
+# Distributed under the terms of the GNU General Public License v2
+
+MY_PN=gcc
+MY_PNV=gcc-${PV}
+MY_PNVR=gcc-${PVR}
+
+require alternatives versionator
+require gnu [ suffix=bz2 subdir=${MY_PNV} ]
+
+export_exlib_phases src_unpack src_prepare src_configure src_compile src_test_expensive src_install \
+    pkg_postinst pkg_prerm pkg_postrm
+
+SUMMARY="GNU Compiler Collection"
+
+LICENCES="GPL-2"
+SLOT="$(ever range 1-2)"
+
+CROSS_COMPILE_TARGETS="
+    arm-exherbo-linux-gnueabi
+    i686-pc-linux-gnu
+    x86_64-pc-linux-gnu
+"
+MYOPTIONS="( targets: ${CROSS_COMPILE_TARGETS} )"
+
+DEPENDENCIES="
+    build:
+        sys-devel/gettext
+        sys-devel/make
+    build+run:
+        dev-libs/gmp:=[>=4.2]
+        dev-libs/mpc:=[>=0.8.1]
+        dev-libs/mpfr:=[>=2.4.0]
+    test-expensive:
+        dev-util/dejagnu
+        sys-devel/autogen
+        dev-libs/mpc:=[>=0.8.1]
+        dev-libs/mpfr:=[>=2.3]
+    build+run:
+        sys-devel/binutils[>=2.20.1] [[ note = [ minimal version of binutils for LTO ] ]]
+"
+
+
+RESTRICT="test strip" # tests are expensive
+
+WORK="${WORKBASE}/build"
+ECONF_SOURCE="${WORKBASE}/${MY_PNV/_p?(re)/-}"
+
+legacy-gcc_src_unpack() {
+    default
+    edo mkdir "${WORK}"
+}
+
+legacy-gcc_src_prepare() {
+    edo cd  "${ECONF_SOURCE}"
+
+    # TODO(compnerd) -fuse-ld to override the linker when GCC 4.8 is the oldest GCC supported.
+    # Until then, because we must use the GCC_EXEC_DIR override parameter -B path to override the
+    # selection of ld for certain packages (e.g. glibc), allow setting a prefixed linker without an
+    # absolute path.  Do the same for the assembler to keep the parallel values similar.
+    # This check needs to be modified to support prefixed tools to be used.
+    edo sed -e 's,DEFAULT_LINKER+set,DEFAULT_LINKER+permissive,'        \
+            -e 's,DEFAULT_ASSEMBLER+set,DEFAULT_ASSEMBLER+permissive,'  \
+            -i "gcc/configure"
+
+    # Do not try fix the systems header files.
+    edo sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+    default
+}
+
+legacy-gcc_src_configure() {
+    local language= languages=( c c++ )
+
+    # NOTE(compnerd) GNU libc v2.4+ provides SSP; however, libc headers may not be properly parsed,
+    # so explicitly inform the compiler about this
+    cat > config.cache <<- EOF
+gcc_cv_libc_provides_ssp=yes
+EOF
+
+    [[ ${CHOST} == x86_64-pc-linux-gnu ]] && libdir=lib64 || libdir=lib
+
+    # NOTE(compnerd) disable bootstrap; the exheres is not meant for GCC development, so there is no
+    # point in rebuilding and rebuilding again just to verify that GCC is able to self-host for most
+    # people.
+
+    # TODO(compnerd) make transactional memory support optional; it requires explicit hardware
+    # support and adds langugae extensions
+    # TODO(compnerd) make vtv an optional feature; it is not free and everything built against it
+    # will need to explicitly depend on the VTV option as it changes vtable information.
+    myconf=(
+        --target=${CHOST}
+        --prefix=/usr
+        --libdir=/usr/${libdir}
+        --bindir=/usr/bin
+        --cache-file=config.cache
+        --hates=docdir
+        --hates=disable-dependency-tracking
+        --with-pkgversion="exherbo ${MY_PNVR}"
+        --program-suffix=-${SLOT}
+        --enable-clocale=gnu
+        --enable-languages="$(IFS=, ; echo "${languages[*]}")"
+        --with-as=${CHOST}-as
+        --with-ld=${CHOST}-ld
+        --with-system-zlib
+        --enable-lto
+        --enable-nls
+
+        --disable-install-libiberty
+        --disable-libcilkrts
+        --disable-libgomp
+        --disable-libitm
+        --disable-libobjc
+        --disable-libquadmath
+        --disable-libquadmath-support
+        --disable-libsanitizer
+        --disable-libssp
+        --disable-libvtv
+        --disable-vtable-verify
+        --without-cloog
+
+        --disable-bootstrap
+        --disable-multilib
+    )
+
+    econf "${myconf[@]}"
+}
+
+legacy-gcc_src_compile() {
+    # NOTE(compnerd) explicitly pass gcc_cv_libc_provides_ssp through the environment to ensure that
+    # the subconfigures receive the parameter.  Unfortunately, the default configure phases seem to
+    # lose this value
+    gcc_cv_libc_provides_ssp=yes default
+}
+
+legacy-gcc_src_test_expensive() {
+    emake check
+}
+
+__gcc_slot_shared_data() {
+    local item= name= page=
+
+    for page in "${IMAGE}"/usr/share/info/*.info ; do
+        name=$(basename "${page}" .info)
+        edo mv "${IMAGE}"/usr/share/info/${name}{,-${SLOT}}.info
+    done
+
+    # NOTE(compnerd) we are currently only moving pages in section 7 as section 1 pages are already
+    # slotted due to the binary naming (c.f. --package-suffix).
+    # TODO(compnerd) consider generalising this so that in the case that new man pages are added,
+    # they will be implicitly slotted.  The logic in __gcc_provide_slot_alternatives is already
+    # agnostic to sections!
+    for page in "${IMAGE}"/usr/share/man/man7/* ; do
+        name=$(basename "${page}" .7)
+        edo mv "${IMAGE}"/usr/share/man/man7/${name}{,-${SLOT}}.7
+    done
+
+    for item in "${IMAGE}"/usr/share/locale/*/*/{cpplib,gcc}.mo ; do
+        [[ -e ${item} ]] || continue
+        name=$(basename "${item}" .mo)
+        edo mv "${item%.mo}"{,-${SLOT}}.mo
+    done
+}
+
+__gcc_slot_runtime() {
+    local libdir= library=
+
+    [[ ${CHOST} == x86_64-pc-linux-gnu ]] && libdir=lib64 || libdir=lib
+
+    # to avoid collisions with links as they will be handled properly in pkg_postinst, remove
+    # any symbolic links first
+    for library in "${IMAGE}"/usr/${libdir}/* ; do
+        if [[ -L ${library} ]] ; then
+            edo rm "${library}"
+            # used to sanity check that the link is handled
+            removed+=( "${library/${IMAGE}/${ROOT:-/}}" )
+        fi
+    done
+
+    for library in "${IMAGE}"/usr/${libdir}/* ; do
+        [[ -f ${library} ]] || continue
+
+        library=${library##${IMAGE}}
+        local name=$(basename "${library}") # libffi.so.4.0.1   libstdc++.so.6.0.10 libstdc++.la
+        local extension=${name#*.}          #        so.4.0.1             so.6.0.10           la
+
+        case "${name}" in
+        lib*san*)
+            # ignore sanitizers, they are handled in __gcc_slot_sanitizers
+        ;;
+        # always use newest available so version and create so symlinks
+        libatomic.so*|libffi.so*|libgcc_s.so*|libitm.so*|libobjc.so*|*.so.0.0.0)
+            # rename /usr/lib/libffi.so.4.0.1 => /usr/lib/libffi-4.3.so.4.0.1
+            edo mv "${IMAGE}${library%.${extension}}"{,-${SLOT}}.${extension}
+
+            symlinks+=( "${library%.${extension}}-${SLOT}.${extension}" )
+            so_symlinks+=( "${library}" )
+        ;;
+        libstdc++.so.*-gdb.py)
+            # skip
+        ;;
+        # slotted properly by upstream (i.e. no collisions between slots), create so symlinks
+        libgij.so*|libstdc++.so*)
+            [[ ${name} == libstdc++.so.* ]] && libstdcpp="${name}"
+
+            so_symlinks+=( "${library}" )
+        ;;
+        # always use newest available version
+        *.a|*.la|*.spec|*.security|*.properties)
+            # rename /usr/lib/libstdc++.la => /usr/lib/libstdc++-4.3.la
+            edo mv "${IMAGE}${library%.${extension}}"{,-${SLOT}}.${extension}
+
+            symlinks+=( "${library%.${extension}}-${SLOT}.${extension}" )
+        ;;
+        esac
+    done
+}
+
+__gcc_setup_gdb_extension() {
+    local item=
+
+    [[ -d ${IMAGE}/usr/share/gdb/python/auto-load ]] || dodir /usr/share/gdb/python/auto-load
+
+    [[ ${CHOST} == x86_64-pc-linux-gnu ]] && libdir=lib64 || libdir=lib
+
+    # GDB extension
+    # c.f. http://gcc.gnu.org/ml/gcc/2009-09/msg00085.html
+    # NOTE(compnerd) these are formatters which are platform agnostic, so simply grab the version
+    # from the primary ABI
+    for item in "${IMAGE}"/usr/${libdir}/*-gdb.py ; do
+        local name=
+
+        [[ -f ${item} ]] || continue
+
+        name=$(basename "${item}")
+        edo mv "${item}" "${IMAGE}/usr/share/gdb/python/auto-load/${name%-gdb.py}"
+
+        nonfatal edo rm "${IMAGE}"/usr/lib*/${name}
+    done
+}
+
+__gcc_migration_wrapper() {
+    local prefix tool target
+
+    local tools=( c++ g++ cpp gcc )
+
+    into /usr/${CHOST}
+
+    for target in ${TARGETS}; do
+        for tool in "${tools[@]}"; do
+            if [[ ${target} == ${CHOST} ]]; then
+                herebin "${target}-${tool}" <<- EOF
+#!/bin/bash
+exec /usr/bin/${target}-${tool}-${SLOT} -B/usr/${CHOST}/${target}/bin -isystem /usr/include -isystem /usr/${target}/include "\${@}"
+EOF
+
+            else
+                dodir "/usr/${CHOST}/bin"
+                dosym ${target}-${tool}-${SLOT} "/usr/${CHOST}/bin/${target}-${tool}"
+            fi
+        done
+    done
+}
+
+__gcc_provide_slot_alternatives() {
+    local alternatives=( gcc legacy-gcc-${SLOT} 0.${SLOT} )
+    local program= item= location= name= section=
+
+    # migration-wrapper
+    for item in "${IMAGE}"/usr/${CHOST}/bin/*; do
+        name=${item##*/}
+        alternatives+=( "/usr/${CHOST}/bin/${name}" "${name}-gcc-wrapper-${SLOT}" )
+    done
+
+    # info pages
+    for item in "${IMAGE}"/usr/share/info/*-${SLOT}.info ; do
+        name=$(basename "${item}" -${SLOT}.info)
+        alternatives+=( "/usr/share/info/${name}.info" "${name}-${SLOT}.info" )
+    done
+
+    # man pages
+    for item in "${IMAGE}"/usr/share/man/man?/*-${SLOT}.? ; do
+        section=${item##*.}
+        name=$(basename "${item}" -${SLOT}.${section})
+        alternatives+=( "/usr/share/man/man${section}/${name}.${section}" "${name}-${SLOT}.${section}" )
+    done
+
+    # locale data
+    for item in "${IMAGE}"/usr/share/locale/*/*/{cpplib,gcc}-${SLOT}.mo ; do
+        [[ -e ${item} ]] || continue
+        name=$(basename "${item}" -${SLOT}.mo)
+        location=$(dirname "${item}")
+        alternatives+=( "${ROOT:-/}${location##${IMAGE}/}/${name}.mo" "${name}-${SLOT}.mo" )
+    done
+
+    # provide alternatives
+    alternatives_for "${alternatives[@]}"
+}
+
+legacy-gcc_src_install() {
+    # TODO(compnerd) figure out why this hack is needed
+    cd "${WORK}"
+    edo emake -j 1 DESTDIR="${IMAGE}" install
+
+    local tool
+    for tool in cpp gcov ; do
+        edo cp "${IMAGE}"/usr/bin/{,${CHOST}-}${tool}-${SLOT}
+    done
+
+    # precompiled headers
+    local precompiled_headers=( "${WORK}"/${CHOST}/libstdc++-v3/include/${CHOST}/bits/*.gch )
+    if [[ -f ${precompiled_headers[0]} ]] ; then
+        insinto /usr/include/c++/${MY_PV:-${PV}}/${CHOST}/bits
+        doins -r "${WORK}"/${CHOST}/libstdc++-v3/include/${CHOST}/bits/*.gch
+    fi
+
+    __gcc_slot_runtime
+    __gcc_slot_shared_data
+    __gcc_migration_wrapper
+    __gcc_setup_gdb_extension
+    __gcc_provide_slot_alternatives
+
+    [[ ${CHOST} == x86_64-pc-linux-gnu ]] && libdir=lib64 || libdir=lib
+
+    # fix libstdc++.so symlink
+    edo rewrite_so_symlink ${libstdcpp} "${IMAGE}"/usr/${libdir} /usr/${libdir}
+
+    # nuke empty dir if applicable
+    nonfatal edo rmdir "${IMAGE}/usr/${libdir}/${MY_PN}/${CHOST}/${MY_PV:-${PV}}/finclude"
+
+    local dir=
+    for dir in "${IMAGE}"/usr/${libdir}/${MY_PN}/${CHOST}/${MY_PV:-${PV}}/include{-fixed,} ; do
+        if [[ -d ${dir} ]] ; then
+            edo find "${dir}" -type d -empty -delete
+        fi
+    done
+}
+
+myln() {
+    nonfatal edo ln -fs "${1}" "${2}" || { eerror "Creating ${2} symlink failed"; return $?; }
+    return 0
+}
+
+rewrite_symlink() {
+    local x ignore lib ext slot versions=() versions_sorted=() latest_slot
+    if [[ ${1} == --ignore ]]; then
+        ignore=${2}; shift
+    fi
+    lib=${1%-${SLOT}.*}
+    ext=${1#*-${SLOT}.}
+    for x in "${2}"/${lib}-+([[:digit:].]).${ext}; do
+        [[ ! -f ${x} || ${x##*/} == ${ignore} ]] && continue
+        slot=${x##*/${lib}-}
+        versions+=( "${slot%.${ext}}" )
+    done
+    if [[ ${#versions[@]} -le 0 ]]; then
+        eerror "Could not rewrite ${1/-${SLOT}}, no other versions available"
+        return 127
+    fi
+    versions_sorted=( $(version_sort_lowest_first "${versions[@]}") )
+    latest_slot=${versions_sorted[${#versions_sorted[@]}-1]}
+    myln ${lib}-${latest_slot}.${ext} "${2}"/${lib}.${ext}
+}
+
+rewrite_so_symlink() {
+    local ret=0 d l ignore ignored lib versions=() versions_sorted=() latest
+    if [[ ${1} == --ignore ]]; then
+        ignore=${2}; shift
+    fi
+    lib=${1%%+([[:digit:].])}; shift
+    for d in "$@"; do
+        for l in "${d}"/${lib}.+([[:digit:].]); do
+            [[ ! -f ${l} ]] && continue
+            [[ ${l##*/} == ${ignore} ]] && ignored=true && continue
+            versions+=( "${l##*/${lib}.}" )
+        done
+    done
+    if [[ ${#versions[@]} -le 0 ]]; then
+        [[ -n ${ignore} && -n ${ignored} ]] && return 0
+        eerror "Could not rewrite ${lib}, no other versions available"
+        return 127
+    fi
+    versions_sorted=( $(version_sort_lowest_first "${versions[@]}") )
+    latest=${lib}.${versions_sorted[${#versions_sorted[@]}-1]}
+    while [[ ${latest} == ${lib}.* ]]; do
+        myln ${latest} "${1}"/${latest%.*} || ((++ret))
+        latest=${latest%.*}
+    done
+    return $ret
+}
+
+cleanup_dangling_libstdcpp_symlinks() {
+    local l
+    for l in "${ROOT}"/usr/libstdc++.so*; do
+        if [[ -L ${l} && ! -f ${l} ]]; then
+            nonfatal edo rm "${l}" || eerror "Failed to clean up ${l}"
+        fi
+    done
+}
+
+handle_symlinks() {
+    local x
+    # generate symlinks for libraries that were manually slotted in src_install, e.g.: libffi.so.4.0.1 -> libffi-4.3.so.4.0.1
+    for x in "${symlinks[@]}"; do
+        rewrite_symlink ${1} "${x##*/}" "${ROOT}${x%/*}"
+    done
+
+    # generate so symlinks, e.g.: libffi.so -> libffi.so.4 -> libffi.so.4.0 -> libffi.so.4.0.1
+    for x in "${so_symlinks[@]}"; do
+        rewrite_so_symlink ${1} ${x##*/} "${ROOT}"/${x%/*}
+    done
+
+    cleanup_dangling_libstdcpp_symlinks
+}
+
+legacy-gcc_pkg_postinst() {
+    alternatives_pkg_postinst
+
+    handle_symlinks
+
+    # get notification if symlinks were removed during src_install that wasn't handled above in pkg_postinst
+    for x in "${removed[@]}"; do
+        [[ ! -e ${ROOT}${x} ]] && eerror "/${x} was removed and never recreated"
+    done
+}
+
+legacy-gcc_pkg_prerm() {
+    alternatives_pkg_prerm
+
+    local ignore
+    [[ -n ${REPLACED_BY_ID} ]] || ignore=--ignore
+    handle_symlinks ${ignore}
+}
+
+legacy-gcc_pkg_postrm() {
+    local x
+    for x in "${symlinks[@]}"; do
+        if [[ -L ${ROOT}${x/-${SLOT}} && ! -e ${ROOT}${x/-${SLOT}} ]]; then
+            nonfatal edo rm "${ROOT}${x/-${SLOT}}" || eerror "Failed to clean up dangling symlink"
+        fi
+    done
+
+    for x in "${so_symlinks[@]%.*}"; do
+        while [[ ${x} == */*.so* ]]; do
+            if [[ -L ${ROOT}${x} && ! -e ${ROOT}${x} ]]; then
+                nonfatal edo rm "${ROOT}${x}" || eerror "Failed to clean up dangling symlink"
+            fi
+            x=${x%.*}
+        done
+    done
+}
+

@@ -20,17 +20,21 @@ MYOPTIONS=""
 
 DEPENDENCIES=""
 
-WORK=${WORKBASE}
+WORK="${WORKBASE}"
 
 DEFAULT_SRC_COMPILE_PARAMS=(
     cc="${CC}"
+    AR="${AR}"
+    RANLIB="${RANLIB}"
     CFLAGS="${CFLAGS}"
     TZDIR="/usr/share/zoneinfo"
 )
 DEFAULT_SRC_INSTALL_PARAMS=(
+    $(exhost --is-native -q || echo zic=build-$(exhost --build)/zic)
     TZDIR=/usr/share/zoneinfo
-    ETCDIR=/usr/bin
-    LIBDIR=/usr/${LIBDIR}
+    # NOTE: timezone-data installs tzselect, zic, zdump, and nothing else to ETCDIR.
+    ETCDIR=/usr/$(exhost --target)/bin
+    LIBDIR=/usr/$(exhost --target)/lib
     MANDIR=/usr/share/man
     TOPDIR=/
 )
@@ -42,11 +46,43 @@ pkg_preinst() {
     fi
 }
 
+src_unpack() {
+    default
+
+    if ! exhost --is-native -q; then
+        edo mkdir build-$(exhost --build)
+        edo pushd build-$(exhost --build)
+        default
+        edo popd
+    fi
+}
+
 src_test() {
     # Don't validate webpages as that requires dependencies on open{jade,sp}
     edo sed -i -e 's: check_web::' Makefile
 
     emake AWK=awk check
+}
+
+src_compile() {
+    local var build_cflags build_cppflags build_ldflags
+
+    # build native zic, it's needed in `make install`
+    if ! exhost --is-native -q; then
+        var=${CHOST//-/_}_CFLAGS; build_cflags=${!var}
+        var=${CHOST//-/_}_CPPFLAGS; build_cppflags=${!var}
+        var=${CHOST//-/_}_LDFLAGS; build_ldflags=${!var}
+
+        emake \
+            CC=$(exhost --build)-gcc \
+            CFLAGS="${build_cflags}" \
+            CPPFLAGS="${build_cppflags}" \
+            LDFLAGS="${build_ldflags}" \
+            -C build-$(exhost --build) \
+            zic
+    fi
+
+    default
 }
 
 src_install() {

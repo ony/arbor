@@ -104,8 +104,6 @@ src_configure() {
 src_install() {
     default
 
-    option debug || edo rmdir "${IMAGE}"/usr/bin
-
     insinto /etc/logrotate.d
     newins "${FILES}"/rsyslog.logrotate rsyslog
 
@@ -115,7 +113,7 @@ src_install() {
 
     if option systemd ; then
         edo echo '$SystemLogSocketName /run/systemd/journal/syslog' >> "${IMAGE}"/etc/rsyslog.conf
-        edo sed -i -e "/systemd-kmsg-syslogd.service/d" "${IMAGE}"/usr/${LIBDIR}/systemd/system/rsyslog.service
+        edo sed -i -e "/systemd-kmsg-syslogd.service/d" "${IMAGE}"${SYSTEMDSYSTEMUNITDIR}/rsyslog.service
     fi
 
     edo rmdir "${IMAGE}"/usr/share/man/man1

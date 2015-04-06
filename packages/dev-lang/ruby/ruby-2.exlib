@@ -65,8 +65,8 @@ ruby-2_src_configure() {
         $(option_enable doc install-doc)
 
         --with-ruby-version=minor
-        --with-rubylibprefix=/usr/${LIBDIR}/ruby
-        --with-rubyhdrdir=/usr/include/ruby-${SLOT}
+        --with-rubylibprefix=/usr/$(exhost --target)/lib/ruby
+        --with-rubyhdrdir=/usr/$(exhost --target)/include/ruby-${SLOT}
 
         --program-suffix=${SLOT}
         --enable-shared
@@ -108,10 +108,11 @@ ruby-2_src_install() {
     default
 
     local \
-        rubylibdir=$(PKG_CONFIG_PATH=. pkg-config ruby-${SLOT} --variable=rubylibdir) \
-        sitearchdir=$(PKG_CONFIG_PATH=. pkg-config ruby-${SLOT} --variable=sitearchdir) \
-        vendordir=$(PKG_CONFIG_PATH=. pkg-config ruby-${SLOT} --variable=vendordir) \
-        vendorarchdir=$(PKG_CONFIG_PATH=. pkg-config ruby-${SLOT} --variable=vendorarchdir)
+        rubylibprefix=$(PKG_CONFIG_PATH=. ${PKG_CONFIG} ruby-${SLOT} --variable=rubylibprefix) \
+        rubylibdir=$(PKG_CONFIG_PATH=. ${PKG_CONFIG} ruby-${SLOT} --variable=rubylibdir) \
+        sitearchdir=$(PKG_CONFIG_PATH=. ${PKG_CONFIG} ruby-${SLOT} --variable=sitearchdir) \
+        vendordir=$(PKG_CONFIG_PATH=. ${PKG_CONFIG} ruby-${SLOT} --variable=vendordir) \
+        vendorarchdir=$(PKG_CONFIG_PATH=. ${PKG_CONFIG} ruby-${SLOT} --variable=vendorarchdir)
     keepdir "${vendorarchdir}" "${sitearchdir}"
 
     if option examples; then
@@ -121,7 +122,7 @@ ruby-2_src_install() {
 
     edo pushd "${IMAGE}"
     local src target alternatives=()
-    for src in usr/bin/*${SLOT} usr/share/man/man1/*${SLOT}.1; do
+    for src in usr/$(exhost --target)/bin/*${SLOT} usr/share/man/man1/*${SLOT}.1; do
         target=${src/${SLOT}}
         alternatives+=( /${target} ${src##*/} )
     done
@@ -133,10 +134,10 @@ ruby-2_src_install() {
 
         # move provided gems into Gem.vendor_dir directory
         dodir ${gem_vendordir}
-        edo mv "${IMAGE}"/usr/${LIBDIR}/ruby/gems/${SLOT}/* "${IMAGE}"/${gem_vendordir}/
+        edo mv "${IMAGE}"/${rubylibprefix}/gems/${SLOT}/* "${IMAGE}"/${gem_vendordir}/
 
         # Gem.default_dir and Gem.vendor_dir
-        keepdir /usr/${LIBDIR}/ruby/gems/${SLOT}/{build_info,cache,doc,extensions,gems,specifications}
+        keepdir ${rubylibprefix}/gems/${SLOT}/{build_info,cache,doc,extensions,gems,specifications}
         keepdir ${gem_vendordir}/{build_info,cache,doc,extensions,gems,specifications}
     else
         # Split gems/ up into vendor_gems/ (packaged gems) and gems/ (user-installed gems)
@@ -149,15 +150,15 @@ ruby-2_src_install() {
             edo sed -e "s/Gem.default_dir/&.gsub\('gems','vendor_gems'\)/" -i \
                 "${IMAGE}"/${rubylibdir}/rubygems/specification.rb
         fi
-        edo mv "${IMAGE}"/usr/${LIBDIR}/ruby/{,vendor_}gems
-        keepdir /usr/${LIBDIR}/ruby/{vendor_,}gems/${SLOT}/{build_info,cache,doc,extensions,gems,specifications}
+        edo mv "${IMAGE}"/${rubylibprefix}/{,vendor_}gems
+        keepdir ${rubylibprefix}/{vendor_,}gems/${SLOT}/{build_info,cache,doc,extensions,gems,specifications}
     fi
 
     # FIXME: I don't know what this is
-    keepdir /usr/${LIBDIR}/ruby/${SLOT}/racc/rdoc
+    keepdir ${rubylibprefix}/${SLOT}/racc/rdoc
 
     # remove empty directory
-    ever at_least 2.2.0 && edo rmdir "${IMAGE}"/usr/${LIBDIR}/ruby/${SLOT}/rake/lib
+    ever at_least 2.2.0 && edo rmdir "${IMAGE}"/${rubylibdir}/rake/lib
 
     # if dependencies are met, C API docs are installed
     edo find "${IMAGE}"/usr/share/doc/${PNVR} -empty -type d -delete

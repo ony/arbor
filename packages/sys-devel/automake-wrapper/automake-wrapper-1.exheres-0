@@ -14,12 +14,17 @@ DEPENDENCIES=""
 
 WORK=${WORKBASE}
 
+src_prepare() {
+    edo cp "${FILES}"/${PV}/${PN}.sh "${WORK}"
+    edo sed -i -e "s#@@EXHOST_TARGET@@#$(exhost --target)#g" ${PN}.sh
+}
+
 src_install() {
-    dobin "${FILES}"/${PV}/${PN}.sh
+    dobin ${PN}.sh
     local i
     for i in aclocal automake; do
-        dosym /usr/bin/${PN}.sh /usr/bin/${i}
+        dosym ${PN}.sh /usr/$(exhost --target)/bin/${i}
     done
-    keepdir /usr/libexec/automake-wrapper
+    keepdir /usr/$(exhost --target)/libexec/automake-wrapper
 }
 

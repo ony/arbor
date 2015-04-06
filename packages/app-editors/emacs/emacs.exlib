@@ -143,8 +143,8 @@ EOF
     # they lose group write permission anyway after being updated
     edo chmod g-w "${IMAGE}"/var/lib/games/emacs/*
     preserve_scores "${IMAGE}"/var/lib/games/emacs/*
-    edo chown wizard:games "${IMAGE}"/usr/libexec/emacs/${MY_PV-${PV}}/${CHOST}/update-game-score
-    edo chmod ug+s "${IMAGE}"/usr/libexec/emacs/${MY_PV-${PV}}/${CHOST}/update-game-score
+    edo chown wizard:games "${IMAGE}"/usr/${CHOST}/libexec/emacs/${MY_PV-${PV}}/${CHOST}/update-game-score
+    edo chmod ug+s "${IMAGE}"/usr/${CHOST}/libexec/emacs/${MY_PV-${PV}}/${CHOST}/update-game-score
 
     elisp-install-site-file
 
@@ -156,9 +156,9 @@ EOF
 
     cd "${IMAGE}"
     edo mv usr/share/man/man1/ctags{,-emacs}.1
-    edo mv usr/bin/ctags{,-emacs}
+    edo mv usr/${CHOST}/bin/ctags{,-emacs}
     alternatives_for ctags emacs 500 \
-        /usr/bin/ctags ctags-emacs \
+        /usr/${CHOST}/bin/ctags ctags-emacs \
         /usr/share/man/man1/ctags.1 ctags-emacs.1
 
     hereenvd 70${PN} <<EOF

@@ -1,0 +1,72 @@
+Upstream: yes
+Reason: cross compilation failed with an error related to the parts
+        removed by this patch
+
+From 8da3f3c38e075498a24fb9db80ae9862bda7154d Mon Sep 17 00:00:00 2001
+From: "Dmitry V. Levin" <ldv@altlinux.org>
+Date: Tue, 9 Dec 2014 01:21:48 +0000
+Subject: [PATCH] Do not use yywrap (ticket #42)
+
+Our scanners do not really use yywrap.  Explicitly disable yywrap
+so that no references to yywrap will be generated and no LEXLIB
+would be needed.
+
+* conf/pam_conv1/Makefile.am (pam_conv1_LDADD): Remove.
+* conf/pam_conv1/pam_conv_l.l: Enable noyywrap option.
+* doc/specs/Makefile.am (padout_LDADD): Remove.
+* doc/specs/parse_l.l: Enable noyywrap option.
+---
+ conf/pam_conv1/Makefile.am  | 2 --
+ conf/pam_conv1/pam_conv_l.l | 1 +
+ doc/specs/Makefile.am       | 2 --
+ doc/specs/parse_l.l         | 1 +
+ 4 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/conf/pam_conv1/Makefile.am b/conf/pam_conv1/Makefile.am
+index b9e6153..ce50b68 100644
+--- a/conf/pam_conv1/Makefile.am
++++ b/conf/pam_conv1/Makefile.am
+@@ -13,5 +13,3 @@ BUILT_SOURCES = pam_conv_y.h
+ noinst_PROGRAMS = pam_conv1
+ 
+ pam_conv1_SOURCES = pam_conv_l.l pam_conv_y.y
+-
+-pam_conv1_LDADD = @LEXLIB@
+diff --git a/conf/pam_conv1/pam_conv_l.l b/conf/pam_conv1/pam_conv_l.l
+index 25b6710..f563eee 100644
+--- a/conf/pam_conv1/pam_conv_l.l
++++ b/conf/pam_conv1/pam_conv_l.l
+@@ -24,6 +24,7 @@
+     extern int current_line;
+ %}
+ 
++%option noyywrap
+ %%
+ 
+ "#"[^\n]*         ; /* skip comments (sorry) */
+diff --git a/doc/specs/Makefile.am b/doc/specs/Makefile.am
+index 2688220..36d53ba 100644
+--- a/doc/specs/Makefile.am
++++ b/doc/specs/Makefile.am
+@@ -21,6 +21,4 @@ noinst_PROGRAMS = padout
+ 
+ padout_SOURCES = parse_l.l parse_y.y
+ 
+-padout_LDADD = @LEXLIB@
+-
+ doc_DATA = draft-morgan-pam-current.txt rfc86.0.txt
+diff --git a/doc/specs/parse_l.l b/doc/specs/parse_l.l
+index 7cab424..d8400a0 100644
+--- a/doc/specs/parse_l.l
++++ b/doc/specs/parse_l.l
+@@ -8,6 +8,7 @@
+ #include "parse_y.h"
+ %}
+ 
++%option noyywrap
+ %%
+ 
+ \#[\$]+[a-zA-Z]*(\=[0-9]+)?          return NEW_COUNTER;
+-- 
+2.3.1
+

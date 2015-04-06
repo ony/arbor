@@ -1,0 +1,26 @@
+Source: Adapted a patch from Michael Forney to newer cmake versions
+Reason: Install cmake.m4 to /usr/share/aclocal/
+Upstream: http://www.cmake.org/Bug/view.php?id=14461
+
+From 07f1446f7e36f9cc6ce7cec2fedd435f953f1258 Mon Sep 17 00:00:00 2001
+From: Heiko Becker <heirecka@exherbo.org>
+Date: Wed, 4 Mar 2015 18:30:41 +0100
+Subject: [PATCH] Install cmake.m4 to /usr/share/aclocal/
+
+---
+ Auxiliary/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Auxiliary/CMakeLists.txt b/Auxiliary/CMakeLists.txt
+index c003b28..34920ee 100644
+--- a/Auxiliary/CMakeLists.txt
++++ b/Auxiliary/CMakeLists.txt
+@@ -1,4 +1,4 @@
+ install(FILES cmake-help.vim cmake-indent.vim cmake-syntax.vim DESTINATION ${CMAKE_DATA_DIR}/editors/vim)
+ install(FILES cmake-mode.el DESTINATION ${CMAKE_DATA_DIR}/editors/emacs)
+-install(FILES cmake.m4 DESTINATION share/aclocal)
++install(FILES cmake.m4 DESTINATION ${CMAKE_DATA_DIR}/../aclocal)
+ add_subdirectory (bash-completion)
+-- 
+2.3.1
+

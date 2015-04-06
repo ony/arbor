@@ -16,13 +16,20 @@ DEPENDENCIES="
 "
 
 DEFAULT_SRC_PREPARE_PATCHES=(
-    -p1 "${FILES}/man-1.6f-unicode.patch"
+    "${FILES}"/${PN}-1.6f-unicode.patch
+    "${FILES}"/${PN}-1.6g-fix-install-location-of-man2html.patch
 )
 
 src_configure() {
-    edo ./configure \
-        -default \
-        -confdir=/etc \
-        -compatibility_mode_for_colored_groff
+    edo env                                       \
+        BUILD_CC="$(exhost --build)-gcc ${CLAGS}" \
+        DEFS="-I/usr/$(exhost --target)/include"  \
+    "${WORK}/configure"                           \
+            -default                              \
+            -prefix=/usr/$(exhost --target)       \
+            -sbindir=/usr/$(exhost --target)/bin  \
+            -mandir=/usr/share/man                \
+            -confdir=/etc                         \
+            -compatibility_mode_for_colored_groff
 }
 

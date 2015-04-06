@@ -1,0 +1,24 @@
+Upstream: yes, https://hg.python.org/cpython/rev/c5f908c56fbd/
+Reason: fix building .so modules for cross-builds
+Release Status: in 2.7.9+, 3.4.3+ and 3.5+
+
+# HG changeset patch
+# User doko@ubuntu.com
+# Date 1412208647 -7200
+# Node ID c5f908c56fbdedbae623536c50a9f567903558f4
+# Parent  b826ba76d1ce19a4cf7e9a31ab2dbd602755a4fc
+- Issue #17219: Add library build dir for Python extension cross-builds.
+
+diff --git a/Lib/distutils/command/build_ext.py b/Lib/distutils/command/build_ext.py
+--- a/Lib/distutils/command/build_ext.py
++++ b/Lib/distutils/command/build_ext.py
+@@ -237,7 +237,7 @@ class build_ext(Command):
+         # Python's library directory must be appended to library_dirs
+         # See Issues: #1600860, #4366
+         if (sysconfig.get_config_var('Py_ENABLE_SHARED')):
+-            if sys.executable.startswith(os.path.join(sys.exec_prefix, "bin")):
++            if not sysconfig.python_build:
+                 # building third party extensions
+                 self.library_dirs.append(sysconfig.get_config_var('LIBDIR'))
+             else:
+

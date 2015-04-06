@@ -1,8 +1,6 @@
 # Copyright 2010 Saleem Abdulrasool <compnerd@compnerd.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require easy-multibuild
-
 SUMMARY="The Oil Runtime Compiler"
 DESCRIPTION="
 Orc is a library and set of tools for compiling and executing very simple programs that operate on
@@ -18,7 +16,6 @@ SLOT="0.4"
 PLATFORMS="~amd64 ~x86"
 MYOPTIONS="
     doc
-    multibuild_c: 32 64
 "
 
 DEPENDENCIES="

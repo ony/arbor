@@ -9,7 +9,7 @@
 
 shopt -s nullglob
 
-AUTOMAKE_WRAPPER_PATH=/usr/libexec/automake-wrapper
+AUTOMAKE_WRAPPER_PATH=/usr/@@EXHOST_TARGET@@/libexec/automake-wrapper
 AUTOMAKE_PROGRAM="$(basename $0)"
 
 # Default to latest available if WANT_AUTOMAKE isn't set
@@ -33,13 +33,13 @@ if [[ -z ${TARGET} ]]; then
 
     if [[ -z ${WANT_AUTOMAKE} || ${WANT_AUTOMAKE} == latest ]]; then
         for v in ${AUTOMAKE_VERSIONS}; do
-            [[ -x /usr/bin/${AUTOMAKE_PROGRAM}-${v} ]] && WANT_AUTOMAKE=${v} && break
+            [[ -x /usr/@@EXHOST_TARGET@@/bin/${AUTOMAKE_PROGRAM}-${v} ]] && WANT_AUTOMAKE=${v} && break
         done
         unset v
     fi
 
-    if [[ -x /usr/bin/${AUTOMAKE_PROGRAM}-${WANT_AUTOMAKE} ]]; then
-        TARGET="/usr/bin/${AUTOMAKE_PROGRAM}-${WANT_AUTOMAKE}"
+    if [[ -x /usr/@@EXHOST_TARGET@@/bin/${AUTOMAKE_PROGRAM}-${WANT_AUTOMAKE} ]]; then
+        TARGET="/usr/@@EXHOST_TARGET@@/bin/${AUTOMAKE_PROGRAM}-${WANT_AUTOMAKE}"
     fi
 fi
 

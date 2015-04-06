@@ -1,5 +1,8 @@
+define(`confAR', ``@@AR@@'')
 define(`confCC', ``@@CC@@'')
 define(`confLD', ``@@LD@@'')
+define(`confINCLUDEDIR', ``@@INCLUDEDIR@@'')
+define(`confLIBDIR', ``@@LIBDIR@@'')
 APPENDDEF(`confENVDEF', ``-DNETINET -DNETUNIX -DNETINET6'')
 APPENDDEF(`confCCOPTS', ``@@CFLAGS@@'')
 APPENDDEF(`confLDOPTS', ``@@LDFLAGS@@'')

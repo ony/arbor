@@ -21,7 +21,6 @@ DEPENDENCIES="
 DEFAULT_SRC_CONFIGURE_PARAMS+=(
     OPTIMIZER=' '
     DEBUG=' '
-    --sbindir=/sbin
     --enable-blkid
     --enable-gettext
     --disable-editline

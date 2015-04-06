@@ -2,6 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 require gnu [ suffix=bz2 ]
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 ] ]
 
 SUMMARY="Archive manager for cpio archives"
 
@@ -17,23 +18,24 @@ DEPENDENCIES="
         app-arch/tar[>=1.26-r1]
 "
 
-DEFAULT_SRC_PREPARE_PATCHES=( ${FILES}/${PNV}-no-gets.patch )
-DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --bindir=/bin
-    --enable-mt
-    --enable-nls
-    --with-rmt=/usr/libexec/rmt
+DEFAULT_SRC_PREPARE_PATCHES=(
+    "${FILES}"/${PNV}-no-gets.patch
+    "${FILES}"/${PNV}-look-for-host-prefixed-ar.patch
+    "${FILES}"/3a7a1820d4cecbd77c7b74c785af5942510bf080.patch
 )
 
+DEFAULT_SRC_CONFIGURE_PARAMS=(
+    --enable-mt
+    --enable-nls
+    --with-rmt=/usr/$(exhost --target)/libexec/rmt
+)
+
+AT_M4DIR=( m4 am )
+
 src_configure() {
-    # Configuration takes a million years without this hack.
+    # NOTE(?) configuration takes a million years without this hack.
     esandbox hack_toolong
     default
     esandbox nohack_toolong
-}
-
-src_install() {
-    default
-    edo rmdir "${IMAGE}"/usr/libexec
 }
 

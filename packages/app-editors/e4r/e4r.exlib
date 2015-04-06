@@ -13,5 +13,5 @@ DEPENDENCIES="
         app-editors/vim"
 MYOPTIONS=""
 
-DEFAULT_SRC_INSTALL_PARAMS=( PREFIX=/usr )
+DEFAULT_SRC_INSTALL_PARAMS=( BINDIR=/usr/$(exhost --target)/bin DATADIR=/usr/share )
 

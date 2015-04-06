@@ -2,7 +2,7 @@
 # Copyright 2014 Aleksandar Petrinic <petrinic@gmail.com>
 # Distributed under the terms of the GNU General Public License v2
 
-require sourceforge [ suffix=tar.xz ] alternatives easy-multibuild
+require sourceforge [ suffix=tar.xz ] alternatives
 
 export_exlib_phases src_install pkg_postinst
 
@@ -16,12 +16,11 @@ LICENCES="ZLIB"
 SLOT="0"
 MYOPTIONS="
     arm_cpu_features: neon
-    multibuild_c: 32 64
 "
 
 DEPENDENCIES="
     build+run:
-        sys-libs/zlib[multibuild_c:*(-)?]
+        sys-libs/zlib
         !media-libs/libpng:0 [[
             description = [ Uninstall media-libs/libpng:0 after switching to the slotted version ]
             resolution = uninstall-blocked-after ]]
@@ -32,19 +31,8 @@ DEFAULT_SRC_CONFIGURE_OPTIONS=(
     'arm_cpu_features:neon --enable-arm-neon=on --enable-arm-neon=off'
 )
 
-install_one_multibuild() {
+libpng_src_install() {
     default
-
-    # Also install libpng-config for targets other than the default
-    if ! multibuild_default_target C; then
-        dodir /usr/${CHOST}/bin
-        edo mv "${IMAGE}"/usr/bin/${PN}${MY_PV}-config "${IMAGE}"/usr/${CHOST}/bin
-
-        local binaries=( libpng-config libpng${MY_PV}-config )
-        for (( i = 0; i < ${#binaries[@]}; i++ )); do
-            alternatives_for _libpng ${SLOT} ${SLOT} /usr/${CHOST}/bin/${binaries[i]} /usr/${CHOST}/bin/${binaries[++i]}
-        done
-    fi
 
     # Remove symlinks and replace them with targets
     # <symlink to remove, alternative's source> <alternative's target>
@@ -53,16 +41,6 @@ install_one_multibuild() {
         libpng.so libpng${MY_PV}.so
         pkgconfig/libpng.pc libpng${MY_PV}.pc
     )
-
-    # Do the actual work
-    for (( i = 0; i < ${#libraries[@]}; i++ )); do
-        edo rm "${IMAGE}"/usr/${LIBDIR}/${libraries[i]}
-        alternatives_for _libpng ${SLOT} ${SLOT} /usr/${LIBDIR}/${libraries[i]} ${libraries[++i]}
-    done
-}
-
-libpng_src_install() {
-    easy-multibuild_src_install
 
     # Move man pages and add alternative's links
     # <man to moves, alternative's source> <move target, alternative's target>
@@ -87,20 +65,26 @@ libpng_src_install() {
     # <symlink to remove, alternative's source> <alternative's target>
     local binaries=( libpng-config libpng${MY_PV}-config )
 
+    local host=$(exhost --target)
     # Do the actual work
+    for (( i = 0; i < ${#libraries[@]}; i++ )); do
+        edo rm "${IMAGE}"/usr/${host}/lib/${libraries[i]}
+        alternatives_for _libpng ${SLOT} ${SLOT} /usr/${host}/lib/${libraries[i]} ${libraries[++i]}
+    done
+
     for (( i = 0; i < ${#man_pages[@]}; i++ )); do
         edo mv "${IMAGE}"/usr/share/man/${man_pages[i]} "${IMAGE}"/usr/share/man/${man_pages[i+1]}
         alternatives_for _libpng ${SLOT} ${SLOT} /usr/share/man/${man_pages[i]} /usr/share/man/${man_pages[++i]}
     done
 
     for (( i = 0; i < ${#headers[@]}; i++ )); do
-        edo rm "${IMAGE}"/usr/include/${headers[i]}
-        alternatives_for _libpng ${SLOT} ${SLOT} /usr/include/${headers[i]} /usr/include/${headers[++i]}
+        edo rm "${IMAGE}"/usr/${host}/include/${headers[i]}
+        alternatives_for _libpng ${SLOT} ${SLOT} /usr/${host}/include/${headers[i]} /usr/${host}/include/${headers[++i]}
     done
 
     for (( i = 0; i < ${#binaries[@]}; i++ )); do
-        edo rm "${IMAGE}"/usr/bin/${binaries[i]}
-        alternatives_for _libpng ${SLOT} ${SLOT} /usr/bin/${binaries[i]}  /usr/bin/${binaries[++i]}
+        edo rm "${IMAGE}"/usr/${host}/bin/${binaries[i]}
+        alternatives_for _libpng ${SLOT} ${SLOT} /usr/${host}/bin/${binaries[i]}  /usr/${host}/bin/${binaries[++i]}
     done
 }
 

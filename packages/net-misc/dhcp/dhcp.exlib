@@ -2,9 +2,10 @@
 # Copyright 2010-2015 Wulf C. Krueger <philantrop@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require systemd-service [ systemd_files=[ dhcpd.service ] ]
+require systemd-service [ systemd_files=[ dhcpd.service ] ] \
+        autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.12 ] ]
 
-export_exlib_phases src_install pkg_postinst
+export_exlib_phases src_prepare src_install pkg_postinst
 
 MY_PNV="${PNV/_rc/rc}"
 MY_PNV="${PNV/_p/-P}"
@@ -37,7 +38,6 @@ DEPENDENCIES="
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --sbindir=/sbin
     --localstatedir=/var
     --enable-dhcpv6
     --enable-execute
@@ -49,6 +49,20 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
 )
 
 WORK=${WORKBASE}/${MY_PNV}
+
+dhcp_src_prepare() {
+    # Part of the build accepts ${AR}...
+    export AR=/usr/$(exhost --target)/bin/$(exhost --tool-prefix)ar
+
+    # ... other parts hardcode it...
+    edo echo "AR = ${AR}" >> common/Makefile.am
+    edo echo "AR = ${AR}" >> dhcpctl/Makefile.am
+    edo echo "AR = ${AR}" >> dst/Makefile.am
+    edo echo "AR = ${AR}" >> omapip/Makefile.am
+    edo echo "AR = ${AR}" >> tests/Makefile.am
+
+    autotools_src_prepare
+}
 
 dhcp_src_install() {
     default
@@ -65,7 +79,7 @@ dhcp_src_install() {
     fi
 
     # install dhcp client script
-    DESTTREE= newsbin client/scripts/linux dhclient-script
+    newbin client/scripts/linux dhclient-script
 
     # install docs
     dodoc -r doc/*

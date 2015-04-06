@@ -53,6 +53,8 @@ DEFAULT_SRC_COMPILE_PARAMS=(
     all
 )
 DEFAULT_SRC_INSTALL_PARAMS=(
+    CROSS_COMPILE="$(exhost --tool-prefix)"
+    BINDIR=/usr/$(exhost --target)/bin
     SYSTEMD_DIR=${SYSTEMDSYSTEMUNITDIR}
     install-systemd
 )
@@ -64,7 +66,7 @@ src_install() {
     newins mdadm.conf-example mdadm.conf
 
     if option baselayout ; then
-        exeinto /${LIBDIR}/rcscripts/addons
+        exeinto /usr/$(exhost --target)/lib/rcscripts/addons
         doexe "${FILES}"/raid-start.sh
         doexe "${FILES}"/raid-stop.sh
         newinitd "${FILES}"/mdadm.rc mdadm
@@ -74,14 +76,14 @@ src_install() {
     fi
 
     if option systemd ; then
-            insinto /usr/${LIBDIR}/tmpfiles.d
+            insinto /usr/$(exhost --target)/lib/tmpfiles.d
             hereins ${PN}.conf <<EOF
 d /run/mdadm 0710 root root -
 EOF
     fi
 
     # Debian checkarray script
-    dosbin ${WORKBASE}/debian/checkarray
+    dobin ${WORKBASE}/debian/checkarray
     dodoc ${WORKBASE}/debian/README.checkarray
 }
 

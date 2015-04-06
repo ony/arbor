@@ -1,0 +1,57 @@
+# Copyright 2015 Saleem Abdulrasool <compnerd@compnerd.org>
+# Distributed under the terms of the GNU General Public License v2
+
+require gnu [ suffix=bz2 subdir=gcc-${PV} pn=gcc ]
+require toolchain-runtime-libraries
+
+if [[ ${PV} == *_pre* ]] ; then
+    DOWNLOADS="ftp://gcc.gnu.org/pub/gcc/snapshots/$(ever range 1-2)-${PV##*_pre}/gcc-$(ever range 1-2)-${PV##*_pre}.tar.bz2"
+fi
+
+SUMMARY="GNU Atomic Library"
+LICENCES="GPL-2"
+SLOT="$(ever range 1-2)"
+
+MYOPTIONS=""
+
+DEPENDENCIES="
+    build:
+        sys-devel/binutils[>=2.20.1] [[ note = [ minimal version of binutils for LTO ] ]]
+"
+
+REMOTE_IDS="freecode:gcc"
+
+UPSTREAM_RELEASE_NOTES="${HOMEPAGE}gcc-${SLOT}/"
+UPSTREAM_CHANGELOG="${UPSTREAM_RELEASE_NOTES}changes.html"
+
+DEFAULT_SRC_PREPARE_PATCHES+=( "${FILES}/libatomic-4.8.1-dependency-tracking.patch" )
+
+ECONF_SOURCE="${WORKBASE}/gcc-${PV/_p?(re)/-}/libatomic"
+WORK="${WORKBASE}/gcc-${PV/_p?(re)/-}/build/$(exhost --target)/libatomic"
+
+# Those tests previously only ran during gcc's test_expensive phase, however
+# they fail completely now:  "... unexpected failures: 22 ..." (4.9.2)
+RESTRICT="test"
+
+DEFAULT_SRC_CONFIGURE_PARAMS=( --disable-multilib )
+
+libatomic_src_unpack() {
+    default
+    mkdir -p "${WORK}"
+}
+
+libatomic_src_prepare() {
+    cd "${ECONF_SOURCE}/.."
+    default
+}
+
+libatomic_src_install() {
+    default
+
+    symlink_dynamic_libs ${PN}
+    slot_dynamic_libs ${PN}
+    slot_static_libs ${PN}
+}
+
+export_exlib_phases src_unpack src_prepare src_install
+

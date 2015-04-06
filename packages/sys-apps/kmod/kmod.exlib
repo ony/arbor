@@ -4,9 +4,10 @@
 # kmod has python bindings. Since we have fucked up our python crap so much, though,
 # I can't get both multibuild C and python to work together.
 # zlin did some work on this. Status unknown.
-require alternatives easy-multibuild
+#NOTE(moben): on cross this should not pose a problem and we can re-enable the python bindings
+require alternatives
 
-export_exlib_phases src_install
+export_exlib_phases src_test src_install
 
 SUMMARY="kmod - handle kernel modules"
 DESCRIPTION="
@@ -28,7 +29,6 @@ MYOPTIONS="
     bash-completion
     debug
     doc [[ description = [ Build libkmod's API documentation using gtk-doc ] ]]
-    multibuild_c: 32 64
 "
 
 DEPENDENCIES="
@@ -36,26 +36,18 @@ DEPENDENCIES="
         dev-libs/libxslt
         doc? ( dev-doc/gtk-doc )
     build+run:
-        app-arch/xz[multibuild_c:*(-)?]
-        sys-libs/zlib[multibuild_c:*(-)?]
+        app-arch/xz
+        sys-libs/zlib
         !sys-apps/module-init-tools [[
             description = [ module-init-tools has been replaced by kmod. ]
             resolution = uninstall-blocked-after
         ]]
 "
 
-DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --enable-logging
-    --enable-manpages
-    --enable-tools
-    --with-xz
-    --with-zlib
-)
+DEFAULT_SRC_CONFIGURE_PARAMS=( '--enable-logging' '--enable-manpages' '--enable-tools' '--with-xz'
+                               '--with-zlib' )
 
-DEFAULT_SRC_CONFIGURE_OPTION_ENABLES=(
-    debug
-    "doc gtk-doc"
-)
+DEFAULT_SRC_CONFIGURE_OPTION_ENABLES=( debug "doc gtk-doc" )
 
 DEFAULT_SRC_CONFIGURE_OPTION_WITHS=(
     "bash-completion bashcompletiondir /usr/share/bash-completion/completions"
@@ -63,7 +55,7 @@ DEFAULT_SRC_CONFIGURE_OPTION_WITHS=(
 
 AT_M4DIR=( m4 )
 
-kmod_test_one_multibuild() {
+kmod_src_test() {
     if [[ -d /lib/modules/$(uname -r)/build ]]; then
         edo mkdir -p testsuite
         emake -j1 check
@@ -72,20 +64,17 @@ kmod_test_one_multibuild() {
     fi
 }
 
-test_one_multibuild() {
-    kmod_test_one_multibuild
-}
-
 kmod_src_install() {
-    easy-multibuild_src_install
+    local host=$(exhost --target)
+    default
 
     # alternatives
-    dodir /bin /sbin
-    local a t alternatives=( kmod-tools ${PN} 10 )
-    for a in depmod insmod modinfo modprobe rmmod ; do
-        dosym ../usr/bin/kmod /sbin/${a}
+    dodir /usr/${host}/bin
+    local a alternatives=( kmod-tools ${PN} 10 )
+    for a in depmod insmod modinfo modprobe lsmod rmmod; do
+        dosym kmod /usr/${host}/bin/${a}
         alternatives+=(
-            /sbin/${a} ${PN}.${a}
+            /usr/${host}/bin/${a}      ${PN}.${a}
             /usr/share/man/man8/${a}.8 ${PN}.${a}.8
         )
     done
@@ -94,16 +83,11 @@ kmod_src_install() {
         edo rm -r "${IMAGE}"/no
     fi
 
-    dosym ../usr/bin/kmod /bin/lsmod
-    dosym ../usr/bin/kmod /sbin/lsmod
     alternatives+=(
-        /bin/lsmod ${PN}.lsmod
-        /sbin/lsmod ${PN}.lsmod
-        /usr/share/man/man8/lsmod.8 ${PN}.lsmod.8
-        /usr/share/man/man5/depmod.d.5 ${PN}.depmod.d.5
-        /usr/share/man/man5/modprobe.d.5 ${PN}.modprobe.d.5
-        /usr/share/man/man5/modules.dep.5 ${PN}.modules.dep.5
-        /usr/share/man/man5/modules.dep.bin.5 ${PN}.modules.dep.bin.5
+        /usr/share/man/man5/depmod.d.5          ${PN}.depmod.d.5
+        /usr/share/man/man5/modprobe.d.5        ${PN}.modprobe.d.5
+        /usr/share/man/man5/modules.dep.5       ${PN}.modules.dep.5
+        /usr/share/man/man5/modules.dep.bin.5   ${PN}.modules.dep.bin.5
     )
 
     alternatives_for "${alternatives[@]}"

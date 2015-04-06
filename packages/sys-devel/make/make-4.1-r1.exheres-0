@@ -2,6 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 require gnu [ suffix=bz2 ]
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 ] ]
 
 SUMMARY="GNU tool which simplifies the build process for users"
 DESCRIPTION="
@@ -31,4 +32,6 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
     --enable-nls
     --without-guile
 )
+
+AT_M4DIR=( config )
 

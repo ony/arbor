@@ -2,7 +2,7 @@
 # Copyright 2009 Saleem Abdulrasool <compnerd@compnerd.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require bash-completion easy-multibuild
+require bash-completion
 
 SUMMARY="Deprecated D-Bus binding for GLib"
 DESCRIPTION="
@@ -20,7 +20,6 @@ PLATFORMS="~amd64 ~x86"
 MYOPTIONS="
     bash-completion
     doc
-    multibuild_c: 32 64
 "
 
 DEPENDENCIES="
@@ -29,9 +28,9 @@ DEPENDENCIES="
         virtual/pkg-config[>=0.9.0]
         doc? ( dev-doc/gtk-doc[>=1.14] )
     build+run:
-        dev-libs/expat[multibuild_c:*(-)?]
-        dev-libs/glib:2[>=2.32][multibuild_c:*(-)?]
-        sys-apps/dbus[>=1.8][multibuild_c:*(-)?]
+        dev-libs/expat
+        dev-libs/glib:2[>=2.32]
+        sys-apps/dbus[>=1.8]
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
@@ -48,12 +47,12 @@ src_configure() {
     edo touch "${WORK}/po/POTFILES.in"
 
     esandbox allow_net 'unix-abstract:/tmp/dbus-fake-socket-*'
-    easy-multibuild_src_configure
+    default
     esandbox allow_net 'unix-abstract:/tmp/dbus-fake-socket-*'
 }
 
 src_install() {
-    easy-multibuild_src_install
+    default
 
     if option bash-completion ; then
         edo dobashcompletion "${IMAGE}"/etc/bash_completion.d/dbus-bash-completion.sh dbus

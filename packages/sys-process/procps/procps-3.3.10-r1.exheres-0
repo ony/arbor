@@ -12,6 +12,7 @@ SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
 MYOPTIONS="
     systemd [[ description = [ obtain various information about processes through logind ] ]]
+    parts: binaries development documentation libraries
 "
 
 DEPENDENCIES="
@@ -70,8 +71,13 @@ src_prepare() {
 src_install() {
     default
 
-    edo mv "${IMAGE}"/usr/usr/bin/* "${IMAGE}"/usr/bin/
+    edo mv "${IMAGE}"/usr/$(exhost --target)/usr/bin/* "${IMAGE}"/usr/$(exhost --target)/bin/
 
     edo find "${IMAGE}"/ -type d -empty -delete
+
+    expart binaries /usr/$(exhost --target)/{,s}bin
+    expart documentation /usr/share/{doc,man}
+    expart libraries /usr/$(exhost --target)/lib
+    expart development /usr/$(exhost --target)/{include,lib/pkgconfig}
 }
 

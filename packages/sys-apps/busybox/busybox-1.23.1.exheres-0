@@ -22,13 +22,19 @@ DEPENDENCIES="
 "
 
 bb_make() {
+    local build_cflags_var=${CHOST//-/_}_CFLAGS
+    local build_cxxflags_var=${CHOST//-/_}_CXXFLAGS
+    local build_ldflags_var=${CHOST//-/_}_LDFLAGS
     local make_options=(
         AR="${AR}"
         NM="${NM}"
 
-        CC="${CC}" CFLAGS="${CFLAGS}" HOSTCC="${CC}" HOSTCFLAGS="${CFLAGS}"
-        CXX="${CXX}" CXXFLAGS="${CXXFLAGS}" HOSTCXX="${CXX}" HOSTCXXFLAGS="${CXXFLAGS}"
-        LDFLAGS="${LDFLAGS}" HOSTLDFLAGS="${LDFLAGS}"
+        CC="${CC}" CFLAGS="${CFLAGS}"
+        CXX="${CXX}" CXXFLAGS="${CXXFLAGS}"
+        LDFLAGS="${LDFLAGS}"
+        HOSTCC="${CHOST}-gcc" HOSTCFLAGS="${!build_cflags_var}"
+        HOSTCXX="${CHOST}-g++" HOSTCXXFLAGS="${!build_cxxflags_var}"
+        HOSTLDFLAGS="${!build_ldflags_var}"
 
         V=1
         SKIP_STRIP=y
@@ -89,24 +95,25 @@ src_test() {
 }
 
 src_install() {
+    local host=$(exhost --target)
+
     # busybox
-    into /
     newbin busybox.dynamic busybox
     newbin busybox.static  busybox-static
 
     # udhcpc
     exeinto /usr/share/udhcpc
     newexe examples/udhcp/simple.script default.script
-    dosym /bin/busybox /bin/udhcpc
+    dosym busybox /usr/${host}/bin/udhcpc
 
     # udhcpd
     insinto /etc
     doins examples/udhcp/udhcpd.conf
-    dosym /bin/busybox /bin/udhcpd
+    dosym busybox /usr/${host}/bin/udhcpd
 
     # dumpleases
     keepdir /var/lib/misc/
-    dosym /bin/busybox /bin/dumpleases
+    dosym busybox /usr/${host}/bin/dumpleases
 
     # docs
     emagicdocs

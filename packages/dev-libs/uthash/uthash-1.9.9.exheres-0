@@ -23,7 +23,7 @@ DEPENDENCIES="
 BUGS_TO="virkony@gmail.com"
 
 src_install() {
-    insinto /usr/include
+    insinto /usr/$(exhost --target)/include
     doins src/*.h
 
     emagicdocs

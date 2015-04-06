@@ -1,0 +1,36 @@
+Reason: Allow user to override objdump
+Upstream: http://sourceforge.net/p/libseccomp/mailman/message/31626588/
+
+From 8be98379f87b3935ad3f4e597c906d847f257261 Mon Sep 17 00:00:00 2001
+From: Michael Forney <mforney@mforney.org>
+Date: Sun, 10 Nov 2013 21:05:15 -0800
+Subject: [PATCH] Allow user to override objdump
+
+---
+ macros.mk | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/macros.mk b/macros.mk
+index 6df5b3a..dee770d 100644
+--- a/macros.mk
++++ b/macros.mk
+@@ -68,6 +68,7 @@ PYTHON ?= /usr/bin/env python
+ 
+ # we require gcc specific functionality
+ GCC ?= gcc
++OBJDUMP ?= objdump
+ 
+ INSTALL ?= install
+ 
+@@ -165,7 +166,7 @@ ifeq ($(V),0)
+ endif
+ INSTALL_LIB_MACRO += \
+ 		basename=$$(echo $^ | sed -e 's/.so.*$$/.so/'); \
+-		soname=$$(objdump -p $^ | grep "SONAME" | awk '{print $$2}'); \
++		soname=$$($(OBJDUMP) -p $^ | grep "SONAME" | awk '{print $$2}'); \
+ 		$(INSTALL) -o $(INSTALL_OWNER) -g $(INSTALL_GROUP) \
+ 			-d "$(INSTALL_LIB_DIR)"; \
+ 		$(INSTALL) -o $(INSTALL_OWNER) -g $(INSTALL_GROUP) -m 0755 \
+-- 
+1.8.4.2
+

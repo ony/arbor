@@ -30,10 +30,9 @@ DEPENDENCIES="
 DEFAULT_SRC_COMPILE_PARAMS=( CC="${CC}" )
 
 prepare_one_multibuild() {
-    edo sed -e "s:\(CFLAGS=\):\1 ${CFLAGS} $(pkg-config --cflags lua-$(lua_get_abi)):" \
-            -e "s:^\(LUA_LIBDIR=\).*:\1 \$(PREFIX)\/${LIBDIR}\/lua\/$(lua_get_abi):" \
-            -e "s|/usr/local|${IMAGE}/usr|" \
-            -e "s,/lib/,/${LIBDIR}/," \
+    edo sed -e "s:\(CFLAGS=\):\1 ${CFLAGS} $(${PKG_CONFIG} --cflags lua-$(lua_get_abi)):" \
+            -e "s:^\(LUA_LIBDIR=\).*:\1 \$(PREFIX)\/lib\/lua\/$(lua_get_abi):" \
+            -e "s|/usr/local|${IMAGE}/usr/$(exhost --target)|" \
             -i "${WORKBASE}"/${MULTIBUILD_CLASS}/${MULTIBUILD_TARGET}/${PN}-${MY_PV}/config
 
     edo sed -e "s: lua : lua$(lua_get_abi) :" \

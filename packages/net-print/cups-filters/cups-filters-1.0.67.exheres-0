@@ -1,7 +1,8 @@
 # Copyright 2012-2015 Timo Gurr <tgurr@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require easy-multibuild systemd-service [ systemd_files=[ "${WORK}"/utils/cups-browsed.service ] ]
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.15 ] ] \
+        systemd-service [ systemd_files=[ "${WORK}"/utils/cups-browsed.service ] ]
 
 SUMMARY="OpenPrinting CUPS Filters"
 DESCRIPTION="
@@ -21,29 +22,28 @@ MYOPTIONS="
     avahi
     dbus
     systemd
-    multibuild_c: 32 64
 "
 
 DEPENDENCIES="
     build:
         virtual/pkg-config
     build+run:
-        app-text/ghostscript[multibuild_c:*(-)?]
-        app-text/poppler[>=0.20.3-r2][lcms][multibuild_c:*(-)?]
-        app-text/qpdf[>=3.0.2][multibuild_c:*(-)?]
-        dev-libs/glib:2[>=2.30.2][multibuild_c:*(-)?]
-        media-libs/fontconfig[>=2.0.0][multibuild_c:*(-)?]
-        media-libs/freetype:2[multibuild_c:*(-)?]
-        media-libs/jpeg:=[multibuild_c:*(-)?]
-        media-libs/lcms2[multibuild_c:*(-)?]
-        media-libs/libpng:=[multibuild_c:*(-)?]
-        media-libs/tiff[multibuild_c:*(-)?]
-        net-print/cups[>=1.7.3][multibuild_c:*(-)?]
+        app-text/ghostscript
+        app-text/poppler[>=0.20.3-r2][lcms]
+        app-text/qpdf[>=3.0.2]
+        dev-libs/glib:2[>=2.30.2]
+        media-libs/fontconfig[>=2.0.0]
+        media-libs/freetype:2
+        media-libs/jpeg:=
+        media-libs/lcms2
+        media-libs/libpng:=
+        media-libs/tiff
+        net-print/cups[>=1.7.3]
         avahi? (
-            net-dns/avahi[multibuild_c:*(-)?]
-            net-print/cups[avahi][multibuild_c:*(-)?]
+            net-dns/avahi
+            net-print/cups[avahi]
         )
-        dbus? ( sys-apps/dbus[multibuild_c:*(-)?] )
+        dbus? ( sys-apps/dbus )
         !app-text/ghostscript[<9.09] [[
             description = [ cups-filters now provides gstopxl and gstoraster ]
             resolution = upgrade-blocked-before
@@ -62,7 +62,14 @@ DEPENDENCIES="
 
 DEFAULT_SRC_COMPILE_PARAMS=( -j1 )
 
-configure_one_multibuild() {
+src_prepare() {
+    edo sed -e "s:\(AC_PATH_PROG(PKGCONFIG, \)\(pkg-config\):\1${PKG_CONFIG}:" \
+            -i configure.ac
+
+    autotools_src_prepare
+}
+
+src_configure() {
     local args=(
         --enable-imagefilters
         --disable-static
@@ -84,19 +91,19 @@ configure_one_multibuild() {
     econf "${args[@]}"
 }
 
-install_one_multibuild() {
+src_install() {
     default
 
     install_systemd_files
 
     if option systemd ; then
-        multibuild_default_target C && edo sed -e 's:cups.service:org.cups.cupsd.service:g' \
-                                               -i "${IMAGE}"/usr/${LIBDIR}/systemd/system/cups-browsed.service
+        edo sed -e 's:cups.service:org.cups.cupsd.service:g' \
+                -i "${IMAGE}"/usr/$(exhost --target)/lib/systemd/system/cups-browsed.service
     fi
 
     if option systemd && ! option avahi ; then
-        multibuild_default_target C && edo sed -e 's: avahi-daemon.service::g' \
-                                               -i "${IMAGE}"/usr/${LIBDIR}/systemd/system/cups-browsed.service
+        edo sed -e 's: avahi-daemon.service::g' \
+                -i "${IMAGE}"/usr/$(exhost --target)/lib/systemd/system/cups-browsed.service
     fi
 }
 

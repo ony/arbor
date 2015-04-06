@@ -46,14 +46,36 @@ DEFAULT_SRC_CONFIGURE_OPTION_WITHS=( 'X x' )
 
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=( BUG-REPORT FDL 'INSTALL*' MORE.STUFF PROJECTS REVISION VERSION )
 
+src_prepare() {
+    autotools_src_prepare
+
+    # TODO(compnerd) fix this properly via autotools
+    edo sed -e '/^AR = /c AR = @host@-ar' \
+            -i "${WORK}/src/libs/gnulib/lib/Makefile.in"
+
+    edo sed -e '/^AR=ar/c AR = @host@-ar' \
+            -i "${WORK}/Makefile.in"
+}
+
+src_compile() {
+    if exhost --is-native -q; then
+        emake
+    else
+        emake \
+            GROFFBIN=/usr/$(exhost --build)/bin/groff \
+            TROFFBIN=/usr/$(exhost --build)/bin/troff \
+            GROFF_BIN_PATH=""
+    fi
+}
+
 src_install() {
     default
     edo rmdir "${IMAGE}"/etc/groff/site-font
     # empty dir
-    edo rmdir "${IMAGE}"/usr/${LIBDIR}/groff/refer
+    edo rmdir "${IMAGE}"/usr/$(exhost --target)/lib/groff/refer
 
     # TODO(compnerd) determine why these symlinks are required
-    dosym tbl /usr/bin/gtbl
-    dosym eqn /usr/bin/geqn
+    dosym tbl /usr/$(exhost --target)/bin/gtbl
+    dosym eqn /usr/$(exhost --target)/bin/geqn
 }
 

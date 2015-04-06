@@ -4,7 +4,7 @@
 # Based in part upon 'tcl-8.5.3.ebuild' from Gentoo, which is:
 #     Copyright 1999-2008 Gentoo Foundation.
 
-require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 1.12 1.11 1.10 ] ] easy-multibuild
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 1.12 1.11 1.10 ] ]
 require sourceforge [ suffix=tar.gz pnv=${PN}${PV}-src ]
 
 MY_PNV="${PN}${PV}"
@@ -24,7 +24,7 @@ REMOTE_IDS+=" freecode:tcltk"
 LICENCES="BSD-3"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="debug multibuild_c: 32 64"
+MYOPTIONS="debug"
 
 DEPENDENCIES=""
 
@@ -33,24 +33,43 @@ WORK="${WORKBASE}/${MY_PNV}/unix"
 RESTRICT="test"
 
 DEFAULT_SRC_PREPARE_PATCHES=(
-    -p2 "${FILES}/${PN}-multilib.patch"
-        "${FILES}/${PN}-tclm4-soname.patch"
-        "${FILES}/${PN}-tclConfig-paths.patch"
-)
-DEFAULT_SRC_CONFIGURE_OPTION_ENABLES=( "debug symbols" )
-DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --enable-threads
-    --hates=docdir
+    -p2 "${FILES}/${PN}-tclm4-soname.patch"
+    -p2 "${FILES}/${PN}-tclConfig-paths.patch"
 )
 
-install_one_multibuild() {
+src_configure() {
+    local extra_params=( )
+
+    if ! exhost --is-native -q ; then
+        extra_params+=(
+            # NOTE(tridactyla) When cross-compiling, tcl conservatively assumes that the
+            # implementations of these functions are buggy because it cannot test that they are not.
+            # Due to a bug in tcl (http://core.tcl.tk/tcl/tktview?name=1195167fff), this causes a
+            # compilation failure because of duplicate fixstrod symbols. Instead, just assume that
+            # they work correctly.
+            tcl_cv_strstr_unbroken=ok
+            tcl_cv_strtoul_unbroken=ok
+            tcl_cv_strtod_unbroken=ok
+            tcl_cv_strtod_buggy=ok
+        )
+    fi
+
+    econf \
+        --enable-threads \
+        --hates=docdir \
+        $(option_enable debug symbols) "${extra_params[@]}"
+}
+
+src_install() {
+    local host=$(exhost --target)
+
     default
     nonfatal emake DESTDIR="${IMAGE}" install-private-headers || die "emake install-private-headers failed"
 
-    keepdir /usr/${LIBDIR}/${PN}8/8.3/
+    keepdir /usr/${host}/lib/${PN}8/8.3/
 
     local v1=$(ever range 1-2)
-    dosym /usr/bin/tclsh{${v1},}
+    dosym tclsh${v1} /usr/${host}/bin/tclsh
 
     dodoc "${WORKBASE}"/${MY_PNV}/{ChangeLog*,changes,README}
 }

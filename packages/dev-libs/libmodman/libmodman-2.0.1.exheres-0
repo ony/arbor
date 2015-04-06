@@ -14,3 +14,5 @@ DEPENDENCIES=""
 
 BUGS_TO="mixi@exherbo.org"
 
+CMAKE_SRC_CONFIGURE_PARAMS+=( -DSHARE_INSTALL_DIR=/usr/share )
+

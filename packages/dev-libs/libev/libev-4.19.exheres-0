@@ -30,6 +30,6 @@ src_install() {
     default
 
     # 'compatibility' header; conflicts with libevent
-    edo rm "${IMAGE}"/usr/include/event.h
+    edo rm "${IMAGE}"/usr/$(exhost --target)/include/event.h
 }
 

@@ -31,7 +31,7 @@ src_prepare() {
 }
 
 DEFAULT_SRC_INSTALL_PARAMS=(
-    BINDIR="${IMAGE}/usr/bin"
+    BINDIR="${IMAGE}/usr/$(exhost --target)/bin"
     DESTDIR="${IMAGE}/usr/share/sgml/docbook/dsssl-stylesheets-${PV}"
 )
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=( WhatsNew )

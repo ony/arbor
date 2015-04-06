@@ -41,12 +41,14 @@ fi
 DEFAULT_SRC_CONFIGURE_PARAMS=( --with-isl=system --with-gmp=system --with-osl=no )
 
 cloog_src_install() {
+    local host=$(exhost --target)
+
     default
 
     # Move headers and pkg-config files to a slot compatibel location,...
-    edo mv "${IMAGE}"/usr/include/{cloog,cloog-${SLOT}}
-    edo mv "${IMAGE}"/usr/${LIBDIR}/pkgconfig/{cloog-isl,cloog-isl-${SLOT}}.pc
-    #edo mv "${IMAGE}"/usr/${LIBDIR}/cloog-isl/{cloog-isl-config,cloog-isl-${SLOT}-config}.cmake
+    edo mv "${IMAGE}"/usr/${host}/include/{cloog,cloog-${SLOT}}
+    edo mv "${IMAGE}"/usr/${host}/lib/pkgconfig/{cloog-isl,cloog-isl-${SLOT}}.pc
+    #edo mv "${IMAGE}"/usr/lib/cloog-isl/{cloog-isl-config,cloog-isl-${SLOT}-config}.cmake
 
     # ... also prepare to rename the libraries ...
     local libraries=(
@@ -57,22 +59,24 @@ cloog_src_install() {
 
     # ... and use alternatives light to get appropriate symlinks
     alternatives=( _cloog ${SLOT} ${SLOT}
-        /usr/include/cloog cloog-${SLOT}
-        /usr/${LIBDIR}/pkgconfig/cloog-isl.pc cloog-isl-${SLOT}.pc
+        /usr/${host}/include/cloog cloog-${SLOT}
+        /usr/${host}/lib/pkgconfig/cloog-isl.pc cloog-isl-${SLOT}.pc
     )
 
     for (( i = 0; i < ${#libraries[@]}; i++ )); do
-        edo mv "${IMAGE}"/usr/${LIBDIR}/${libraries[i]} "${IMAGE}"/usr/${LIBDIR}/${libraries[i+1]}
-        alternatives+=( /usr/${LIBDIR}/${libraries[i]} ${libraries[++i]} )
+        edo mv "${IMAGE}"/usr/${host}/lib/${libraries[i]} "${IMAGE}"/usr/${host}/lib/${libraries[i+1]}
+        alternatives+=( /usr/${host}/lib/${libraries[i]} ${libraries[++i]} )
     done
 
     alternatives_for "${alternatives[@]}"
 }
 
 cloog_pkg_postinst() {
+    local host=$(exhost --target)
+
     # We can't force alternatives to overwrite files with symlinks
     if has_version --root "dev-libs/cloog:0"; then
-        for f in "${ROOT}"/usr/{include/cloog,${LIBDIR}/{libcloog-isl.{,l}a,pkgconfig/cloog-isl.pc}}; do
+        for f in "${ROOT}"/usr/${host}/{include/cloog,lib/{libcloog-isl.{,l}a,pkgconfig/cloog-isl.pc}}; do
             [[ -e ${f} && ! -L ${f} ]] && nonfatal edo rm -r "${f}";
         done
     fi

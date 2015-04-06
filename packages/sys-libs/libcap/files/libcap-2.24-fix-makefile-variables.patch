@@ -1,0 +1,130 @@
+Upstream: yes
+
+From 0ee94211e95096750ede752acd13b163aa6d5046 Mon Sep 17 00:00:00 2001
+From: Benedikt Morbach <benedikt.morbach@googlemail.com>
+Date: Tue, 20 May 2014 23:30:53 +0200
+Subject: don't include FAKEROOT in Makefile variables
+
+instead, prepend it when actually using them.
+This makes the variables more useful for specifying on the make invocation,
+as you don't have to repeat your FAKEROOT/DESTDIR for every variable you
+want to set. Just like you can set 'lib' without specifying lib_prefix.
+
+compare:
+    make DESTDIR="${somevar}" prefix=/usr/local LIBDIR="${somevar}"/usr/local/lib96 MANDIR="${somevar}"/usr/share/man
+to:
+    make DESTDIR="${somevar}" prefix=/usr/local LIBDIR=/usr/local/lib96 MANDIR=/usr/share/man
+
+Signed-off-by: Andrew G Morgan <morgan@kernel.org>
+
+diff --git a/Make.Rules b/Make.Rules
+index 882b033..18b7cf7 100644
+--- a/Make.Rules
++++ b/Make.Rules
+@@ -31,11 +31,11 @@ endif
+ 
+ # Target directories
+ 
+-MANDIR=$(FAKEROOT)$(man_prefix)/man
+-SBINDIR=$(FAKEROOT)$(exec_prefix)/sbin
+-INCDIR=$(FAKEROOT)$(inc_prefix)/include
+-LIBDIR=$(FAKEROOT)$(lib_prefix)/$(lib)
+-PKGCONFIGDIR=$(FAKEROOT)$(prefix)/$(lib)/pkgconfig
++MANDIR=$(man_prefix)/man
++SBINDIR=$(exec_prefix)/sbin
++INCDIR=$(inc_prefix)/include
++LIBDIR=$(lib_prefix)/$(lib)
++PKGCONFIGDIR=$(prefix)/$(lib)/pkgconfig
+ 
+ # common defines for libcap
+ LIBTITLE=libcap
+diff --git a/doc/Makefile b/doc/Makefile
+index 7d1f347..8e87b17 100644
+--- a/doc/Makefile
++++ b/doc/Makefile
+@@ -30,11 +30,11 @@ html:
+ 	done
+ 
+ install:
+-	mkdir -p -m 755 $(MANDIR)/man1 $(MANDIR)/man3 $(MANDIR)/man8
++	mkdir -p -m 755 $(FAKEROOT)$(MANDIR)/man1 $(FAKEROOT)$(MANDIR)/man3 $(FAKEROOT)$(MANDIR)/man8
+ 	for man in \
+-		$(MANDIR)/man1 $(MAN1S) \
+-		$(MANDIR)/man3 $(MAN3S) \
+-		$(MANDIR)/man8 $(MAN8S) \
++		$(FAKEROOT)$(MANDIR)/man1 $(MAN1S) \
++		$(FAKEROOT)$(MANDIR)/man3 $(MAN3S) \
++		$(FAKEROOT)$(MANDIR)/man8 $(MAN8S) \
+ 		; \
+ 	do \
+ 		case $$man in \
+diff --git a/libcap/Makefile b/libcap/Makefile
+index 80ccf3c..0ccd2e7 100644
+--- a/libcap/Makefile
++++ b/libcap/Makefile
+@@ -71,18 +71,18 @@ cap_text.o: cap_text.c $(USE_GPERF_OUTPUT) $(INCLS)
+ 	$(CC) $(CFLAGS) $(IPATH) $(INCLUDE_GPERF_OUTPUT) -c $< -o $@
+ 
+ install: all
+-	mkdir -p -m 0755 $(INCDIR)/sys
+-	install -m 0644 include/sys/capability.h $(INCDIR)/sys
+-	mkdir -p -m 0755 $(LIBDIR)
+-	install -m 0644 $(STALIBNAME) $(LIBDIR)/$(STALIBNAME)
+-	install -m 0644 $(MINLIBNAME) $(LIBDIR)/$(MINLIBNAME)
+-	ln -sf $(MINLIBNAME) $(LIBDIR)/$(MAJLIBNAME)
+-	ln -sf $(MAJLIBNAME) $(LIBDIR)/$(LIBNAME)
++	mkdir -p -m 0755 $(FAKEROOT)$(INCDIR)/sys
++	install -m 0644 include/sys/capability.h $(FAKEROOT)$(INCDIR)/sys
++	mkdir -p -m 0755 $(FAKEROOT)$(LIBDIR)
++	install -m 0644 $(STALIBNAME) $(FAKEROOT)$(LIBDIR)/$(STALIBNAME)
++	install -m 0644 $(MINLIBNAME) $(FAKEROOT)$(LIBDIR)/$(MINLIBNAME)
++	ln -sf $(MINLIBNAME) $(FAKEROOT)$(LIBDIR)/$(MAJLIBNAME)
++	ln -sf $(MAJLIBNAME) $(FAKEROOT)$(LIBDIR)/$(LIBNAME)
+ ifeq ($(FAKEROOT),)
+ 	-/sbin/ldconfig
+ endif
+-	mkdir -p -m 0755 $(PKGCONFIGDIR)
+-	install -m 0644 libcap.pc $(PKGCONFIGDIR)/libcap.pc
++	mkdir -p -m 0755 $(FAKEROOT)$(PKGCONFIGDIR)
++	install -m 0644 libcap.pc $(FAKEROOT)$(PKGCONFIGDIR)/libcap.pc
+ 
+ clean:
+ 	$(LOCALCLEAN)
+diff --git a/pam_cap/Makefile b/pam_cap/Makefile
+index 9ca5bef..cc32fb6 100644
+--- a/pam_cap/Makefile
++++ b/pam_cap/Makefile
+@@ -13,8 +13,8 @@ all: pam_cap.so
+ 	$(MAKE) testcompile
+ 
+ install: all
+-	mkdir -p -m 0755 $(LIBDIR)/security
+-	install -m 0755 pam_cap.so $(LIBDIR)/security
++	mkdir -p -m 0755 $(FAKEROOT)$(LIBDIR)/security
++	install -m 0755 pam_cap.so $(FAKEROOT)$(LIBDIR)/security
+ 
+ pam_cap.so: pam_cap.o
+ 	$(LD) $(LDFLAGS) -o pam_cap.so $< $(LDLIBS)
+diff --git a/progs/Makefile b/progs/Makefile
+index ef51dc6..778149e 100644
+--- a/progs/Makefile
++++ b/progs/Makefile
+@@ -25,12 +25,12 @@ $(BUILD): %: %.o
+ 	$(CC) $(IPATH) $(CFLAGS) -c $< -o $@
+ 
+ install: all
+-	mkdir -p -m 0755 $(SBINDIR)
++	mkdir -p -m 0755 $(FAKEROOT)$(SBINDIR)
+ 	for p in $(PROGS) ; do \
+-		install -m 0755 $$p $(SBINDIR) ; \
++		install -m 0755 $$p $(FAKEROOT)$(SBINDIR) ; \
+ 	done
+ ifeq ($(RAISE_SETFCAP),yes)
+-	$(SBINDIR)/setcap cap_setfcap=i $(SBINDIR)/setcap
++	$(FAKEROOT)$(SBINDIR)/setcap cap_setfcap=i $(FAKEROOT)$(SBINDIR)/setcap
+ endif
+ 
+ clean:
+-- 
+cgit v0.10.2
+

@@ -183,9 +183,9 @@ ecmake() {
         -DCMAKE_NM:PATH="${NM}"
         -DCMAKE_C_COMPILER:PATH="${CC}"
         -DCMAKE_CXX_COMPILER:PATH="${CXX}"
-        -DCMAKE_INSTALL_PREFIX:PATH="${PREFIX:=/usr}"
-        -DLIB_SUFFIX:STRING=${LIBDIR#lib}
-        -DCMAKE_PREFIX_PATH:PATH=/usr/${LIBDIR}
+        -DCMAKE_INSTALL_PREFIX:PATH="${PREFIX:=/usr/$(exhost --target)}"
+        -DCMAKE_SYSTEM_PREFIX_PATH:PATH="${PREFIX:=/usr/$(exhost --target)}"
+        -DCMAKE_INSTALL_LIBDIR:STRING='lib'
     )
 
     local cmake_api

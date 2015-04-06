@@ -1,24 +1,21 @@
 # Copyright 2007 Bryan Østergaard
 # Distributed under the terms of the GNU General Public License v2
 
-require python sourceforge [ suffix=tar.gz ] easy-multibuild
+require python sourceforge [ suffix=tar.gz ]
 
 SUMMARY="A proactive password sanity library"
 
 LICENCES="LGPL-2.1"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="
-    python
-    multibuild_c: 32 64
-"
+MYOPTIONS="python"
 
 DEPENDENCIES="
     build:
         sys-devel/gettext[>=0.17]
     build+run:
-        sys-libs/zlib[multibuild_c:*(-)?]
-        python? ( dev-lang/python:=[multibuild_c:*(-)?] )"
+        sys-libs/zlib
+        python? ( dev-lang/python:= )"
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
     --enable-nls
@@ -27,26 +24,10 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
 )
 DEFAULT_SRC_CONFIGURE_OPTION_WITHS=( python )
 
-configure_one_multibuild() {
-    if option python; then
-        local prefix='/usr'
-        multibuild_default_target C || prefix="/usr/${CHOST}"
-
-        export PYTHON="${prefix}/bin/python"
-        export CPPFLAGS="-I${prefix}/include $(multibuild_get_var C ${MULTIBUILD_TARGET} CPPFLAGS)"
-    fi
-
-    default
-}
-
-install_one_multibuild() {
+src_install() {
     default
 
     option python && python_bytecompile
-}
-
-src_install() {
-    easy-multibuild_src_install
 
     dodir /var/cache/cracklib
     keepdir /var/cache/cracklib
@@ -57,7 +38,7 @@ src_install() {
 }
 
 pkg_postinst() {
-    edo cracklib-format "${ROOT}"/usr/share/dict/cracklib-small \
-        | cracklib-packer "${ROOT}"/var/cache/${PN}/cracklib_dict
+    edo "/usr/$(exhost --build)/bin/cracklib-format" "${ROOT:-/}usr/share/dict/cracklib-small" \
+        | "/usr/$(exhost --build)/bin/cracklib-packer" "${ROOT:-/}var/cache/${PN}/cracklib_dict"
 }
 

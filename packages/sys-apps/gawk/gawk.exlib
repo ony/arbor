@@ -23,9 +23,7 @@ DEPENDENCIES="
         sys-libs/readline
 "
 
-# Install binaries outside /usr
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --bindir=/bin
     --enable-nls
     --with-mpfr
     --with-readline
@@ -35,7 +33,14 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=( FUTURES LIMITATIONS POSIX.STD )
 
 gawk_src_prepare() {
+    default
     option baselayout && edo cp -R "${FILES}"/filefuncs-$(ever major) "${WORKBASE}"/filefuncs
+
+    # During building gawk is called which can't be run when cross compiling
+    if ! exhost --is-native -q ; then
+        edo sed -e '/check-recursive all-recursive: check-for-shared-lib-support/d' \
+                -i extension/Makefile.in
+    fi
 }
 
 gawk_src_compile() {
@@ -50,19 +55,15 @@ gawk_src_compile() {
 gawk_src_install() {
     default
 
-    # don't install the same binary twice. instead use symlinks
-    dodir /usr/bin
-    edo rm "${IMAGE}"/bin/gawk
-    dosym gawk-${PV} /bin/gawk
-    dosym ../../bin/gawk /usr/bin/gawk
-
     if option baselayout; then
         cd "${WORKBASE}"/filefuncs
         nonfatal emake DESTDIR="${IMAGE}" LIBDIR=${LIBDIR} install || die "filefuncs emake install failed"
     fi
 
+    # NOTE(compnerd) awk symlink is managed via alternatives
+    edo rm "${IMAGE}/usr/$(exhost --target)/bin/awk"
     alternatives_for awk ${PN} 5 \
-        /usr/bin/awk ${PN} \
+        /usr/$(exhost --target)/bin/awk ${PN} \
         /usr/share/man/man1/awk.1 ${PN}.1
 }
 

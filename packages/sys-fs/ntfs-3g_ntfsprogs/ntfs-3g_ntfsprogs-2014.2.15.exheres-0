@@ -54,7 +54,7 @@ REMOTE_IDS="sourceforge:ntfs-3g"
 UPSTREAM_RELEASE_NOTES="${BASE_URL}/community/release-history/"
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --exec-prefix=/usr
+    --exec-prefix=/usr/$(exhost --target)
     --enable-mount-helper
     --enable-ntfsprogs
     --enable-xattr-mappings
@@ -74,13 +74,13 @@ DEFAULT_SRC_CONFIGURE_OPTION_ENABLES=(
 src_install() {
     default
 
-    dodir /usr/sbin
-    edo mv "${IMAGE}"/sbin/* "${IMAGE}"/usr/sbin
+    dodir /usr/$(exhost --target)/bin
+    edo mv "${IMAGE}"/sbin/* "${IMAGE}"/usr/$(exhost --target)/bin
     edo rmdir "${IMAGE}"/sbin
 
-    dosym /usr/sbin/mount.ntfs{-3g,}
+    dosym /usr/$(exhost --target)/bin/mount.ntfs{-3g,}
 
-    option extras && dosym /usr/bin/{ntfsck,fsck.ntfs}
+    option extras && dosym /usr/$(exhost --target)/bin/{ntfsck,fsck.ntfs}
 }
 
 pkg_postinst() {

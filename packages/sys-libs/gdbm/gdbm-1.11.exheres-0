@@ -1,14 +1,14 @@
 # Copyright 2007 Bryan Østergaard
 # Distributed under the terms of the GNU General Public License v2
 
-require gnu [ suffix=gz ] easy-multibuild
+require gnu [ suffix=gz ]
 
 SUMMARY="GNU replacement for dbm and ndbm libraries"
 
 LICENCES="GPL-3"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS=""
 
 DEPENDENCIES="
     build:
@@ -16,15 +16,15 @@ DEPENDENCIES="
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --includedir=/usr/include/gdbm
+    --includedir=/usr/$(exhost --target)/include/gdbm
     --enable-libgdbm-compat
     --enable-nls
     --disable-static
 )
 
 src_install() {
-    easy-multibuild_src_install
+    default
 
-    edo mv "${IMAGE}"/usr/include/gdbm/gdbm.h "${IMAGE}"/usr/include/
+    edo mv "${IMAGE}"/usr/$(exhost --target)/include/gdbm/gdbm.h "${IMAGE}"/usr/$(exhost --target)/include/
 }
 

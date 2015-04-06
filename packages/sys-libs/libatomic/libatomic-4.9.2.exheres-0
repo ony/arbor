@@ -1,0 +1,7 @@
+# Copyright 2015 Saleem Abdulrasool <compnerd@compnerd.org>
+# Distributed under the terms of the GNU General Public License v2
+
+require libatomic
+
+PLATFORMS="~amd64 ~arm ~x86"
+

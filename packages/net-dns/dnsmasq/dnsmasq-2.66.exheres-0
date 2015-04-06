@@ -60,6 +60,7 @@ src_compile() {
     option conntrack && COPTS="${COPTS} -DHAVE_CT"
     option idn && COPTS="${COPTS} -DHAVE_IDN"
     emake \
+        PREFIX=/usr/$(exhost --target)
         CC="${CC}" \
         CFLAGS="${CFLAGS}" \
         COPTS="${COPTS}" \
@@ -67,7 +68,7 @@ src_compile() {
 }
 
 src_install() {
-    emake -j3 DESTDIR="${IMAGE}" PREFIX=/usr install$(option nls && echo "-i18n")
+    emake -j3 DESTDIR="${IMAGE}" PREFIX=/usr BINDIR=/usr/$(exhost --target)/bin install$(option nls && echo "-i18n")
 
     insinto /etc
     doins dnsmasq.conf

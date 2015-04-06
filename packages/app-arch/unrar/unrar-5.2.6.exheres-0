@@ -38,7 +38,7 @@ src_compile() {
 src_install() {
     dobin unrar
     dolib libunrar.so
-    insinto /usr/include/unrar
+    insinto /usr/$(exhost --target)/include/unrar
     doins dll.hpp
     dodoc readme.txt
 }

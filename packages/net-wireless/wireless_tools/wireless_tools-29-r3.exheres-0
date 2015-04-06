@@ -24,14 +24,17 @@ DEPENDENCIES="
 DEFAULT_SRC_INSTALL_PARAMS=( PREFIX="${IMAGE}" )
 
 src_prepare() {
+    local host=$(exhost --target)
+
     edo sed -e "s:^\(CC\) = gcc:\1 = ${CC}:" \
             -e "s:^\(AR\) = ar:\1 = ${AR}:" \
             -e "s:^\(RANLIB\) = ranlib:\1 = ${RANLIB}:" \
             -e "/^CFLAGS=/s:^:#:" \
             -e "s:^\(@\$(LDCONFIG).*\):#\1:" \
+            -e "s:^\(INSTALL_DIR= \$(PREFIX)\)/sbin/:\1/usr/${host}/bin:" \
+            -e "s:^\(INSTALL_LIB= \$(PREFIX)\)/lib/:\1/usr/${host}/lib:" \
             -e "s:^\(INSTALL_MAN= \$(PREFIX)\)/man/:\1/usr/share/man:" \
-            -e "s:^\(INSTALL_INC= \$(PREFIX)\)/include/:\1/usr/include:" \
-            -e "s:^\(INSTALL_LIB= \$(PREFIX)\)/lib/:\1/${LIBDIR}/:" \
+            -e "s:^\(INSTALL_INC= \$(PREFIX)\)/include/:\1/usr/${host}/include:" \
             -i Makefile
 }
 

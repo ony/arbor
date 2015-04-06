@@ -1,6 +1,6 @@
 # Copyright 2008, 2009 Ingmar Vanhassel <ingmar@exherbo.org>
 # Copyright 2009 Mike Kelly
-# Copyright 2014 Heiko Becker <heirecka@exherbo.org>
+# Copyright 2014-2015 Heiko Becker <heirecka@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 # Based in part upon 'lua-5.1.3.ebuild' from Gentoo, which is:
 #     Copyright 1999-2008 Gentoo Foundation.
@@ -31,10 +31,9 @@ http://www.lua.org/manual/${SLOT}/     [[ description = [ Reference documentatio
 lua-build_src_prepare() {
     # Doing this here instead of passing relevant options in src_{compile,install} is cleaner
     # Set install paths, don't create empty directories.
-    edo sed -e "/^INSTALL_TOP/s:= .*:= ${IMAGE}/usr:" \
-            -e "/^INSTALL_INC/s:= .*:= ${IMAGE}/usr/include/${PN}${SLOT}:" \
+    edo sed -e "/^INSTALL_TOP/s:= .*:= ${IMAGE}/usr/$(exhost --target):" \
+            -e "/^INSTALL_INC/s:= .*:= ${IMAGE}/usr/$(exhost --target)/include/${PN}${SLOT}:" \
             -e "/^INSTALL_MAN/s:= .*:= ${IMAGE}/usr/share/man/man1:" \
-            -e "/^INSTALL/s:lib:${LIBDIR}:" \
             -e '/MKDIR/s:$(INSTALL_LMOD) $(INSTALL_CMOD)::' \
             -i Makefile
 
@@ -46,14 +45,14 @@ lua-build_src_prepare() {
         edo mv etc/{${PN},${PN}-${SLOT}}.pc
     fi
 
-    edo sed -e "/^prefix/s:/.*$:/usr:" \
+    edo sed -e "/^prefix/s:/.*$:/usr/$(exhost --target):" \
             -e "/^includedir/s:$:/${PN}${SLOT}:" \
             -e "/^Libs/s:-llua:&${SLOT}:" \
-            -e "s:/lib:/${LIBDIR}:" \
             -i etc/${PN}-${SLOT}.pc
 
-    edo sed -e 's:/usr/local/:/usr/:' \
-            -e "s:lib/:${LIBDIR}/:" \
+    # The trailing slashes are needed
+    edo sed -e "s:/usr/local/:/usr/$(exhost --target)/:" \
+            -e 's:LUA_ROOT "share/lua/":"/usr/share/lua/":' \
             -i src/luaconf.h
 
     default
@@ -64,7 +63,7 @@ lua-build_src_compile() {
         CC="${CC}"
         CFLAGS="-DLUA_USE_LINUX ${CFLAGS}"
         PLAT="linux"
-        RPATH="/usr/${LIBDIR}"
+        RPATH="/usr/$(exhost --target)/lib"
     )
 
     emake "${ARGS[@]}" echo
@@ -72,9 +71,11 @@ lua-build_src_compile() {
 }
 
 lua-build_src_install() {
+    local host=$(exhost --target)
+
     emake "${ARGS[@]}" exherbo_install
 
-    insinto /usr/${LIBDIR}/pkgconfig
+    insinto /usr/${host}/lib/pkgconfig
     doins etc/${PN}-${SLOT}.pc
 
     if ! ever at_least 5.2.2 ; then
@@ -92,10 +93,10 @@ lua-build_src_install() {
 
     alternatives=( ${PN} ${SLOT} ${SLOT} )
     for executable in lua{,c} ; do
-        alternatives+=( /usr/bin/${executable} ${executable}${SLOT} )
+        alternatives+=( /usr/${host}/bin/${executable} ${executable}${SLOT} )
         alternatives+=( /usr/share/man/man1/${executable}.1 ${executable}${SLOT}.1 )
     done
-    alternatives+=( /usr/${LIBDIR}/pkgconfig/lua.pc lua-${SLOT}.pc )
+    alternatives+=( /usr/${host}/lib/pkgconfig/lua.pc lua-${SLOT}.pc )
 
     alternatives_for "${alternatives[@]}"
 }
@@ -105,7 +106,7 @@ lua-build_pkg_postinst() {
 
         # Since "eclectic alternatives updates --force .." doesn't actually
         # overwrite files with symlinks, we need to delete them manually.
-        for f in "${ROOT}"/usr/{bin/lua{,c},${LIBDIR}/pkgconfig/lua.pc,share/man/man1/lua{,c}.1}; do
+        for f in "${ROOT}"/usr/$(exhost --target){bin/lua{,c},lib/pkgconfig/lua.pc,share/man/man1/lua{,c}.1}; do
             [[ -e ${f} && ! -L ${f} ]] && nonfatal edo rm "${f}";
         done
     fi

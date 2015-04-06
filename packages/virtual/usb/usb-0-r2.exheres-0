@@ -2,17 +2,15 @@
 # Distributed under the terms of the GNU General Public License v2
 
 SUMMARY="Virtual for libusb/libusbx"
-DESCRIPTION="
-"
 HOMEPAGE=""
 DOWNLOADS=""
 
 SLOT="1"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS=""
 
 DEPENDENCIES="
     build+run:
-        dev-libs/libusb:1[multibuild_c:*(-)?]
+        dev-libs/libusb:1
 "
 

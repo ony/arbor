@@ -17,7 +17,9 @@ DEPENDENCIES="
         sys-apps/util-linux
 "
 
+DEFAULT_SRC_INSTALL_PARAMS=( SBINDIR=/usr/$(exhost --target)/bin )
+
 pkg_postinst() {
-    build-docbook-catalog
+    build-docbook-catalog || ewarn "build-docbook-catalog failed."
 }
 

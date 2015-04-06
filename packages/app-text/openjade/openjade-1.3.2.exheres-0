@@ -33,9 +33,9 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
     --enable-http
     --enable-default-catalog=/etc/sgml/catalog
     --enable-default-search-path=/usr/share/sgml
-    --libdir=/usr/${LIBDIR}
     --datadir=/usr/share/sgml/${PNV}
     --hates=docdir
+    --hates=datarootdir
 )
 
 src_configure() {
@@ -58,18 +58,17 @@ src_configure() {
 }
 
 src_install() {
-    dodir /usr/${LIBDIR}
+    local host=$(exhost --target)
 
     emake DESTDIR="${IMAGE}" \
-        libdir=/usr/${LIBDIR} \
         install install-man
 
-    dosym openjade  /usr/bin/jade
-    dosym onsgmls   /usr/bin/nsgmls
-    dosym osgmlnorm /usr/bin/sgmlnorm
-    dosym ospam     /usr/bin/spam
-    dosym ospent    /usr/bin/spent
-    dosym osx       /usr/bin/sgml2xml
+    dosym openjade  /usr/${host}/bin/jade
+    dosym onsgmls   /usr/${host}/bin/nsgmls
+    dosym osgmlnorm /usr/${host}/bin/sgmlnorm
+    dosym ospam     /usr/${host}/bin/spam
+    dosym ospent    /usr/${host}/bin/spent
+    dosym osx       /usr/${host}/bin/sgml2xml
 
     insinto /usr/share/sgml/${PNV}/
     doins dsssl/builtins.dsl

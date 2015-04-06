@@ -27,6 +27,7 @@ dosfstools_src_prepare() {
     edo sed -e "/^PREFIX/s:=.*:= /usr:" \
             -e '/^OPTFLAGS/d' \
             -e '/^DEBUGFLAGS/d' \
+            -e "/^SBINDIR/s:=.*:= /usr/$(exhost --target)/bin:" \
             -i Makefile
 }
 

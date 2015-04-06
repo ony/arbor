@@ -2,14 +2,14 @@
 # Copyright 2008 Richard Brown
 # Distributed under the terms of the GNU General Public License v2
 
-require gnu [ suffix=xz ] easy-multibuild
+require gnu [ suffix=xz ]
 
 SUMMARY="Generic library support script"
 
 LICENCES="GPL-2"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS=""
 
 DEPENDENCIES="
     build:
@@ -22,22 +22,19 @@ DEFAULT_SRC_INSTALL_EXTRA_DOCS=( docs/PLATFORMS )
 
 WORK="${WORKBASE}/${PNV%a}"
 
-test_one_multibuild() {
-    multibuild_default_target C && emake TESTSUITEFLAGS="-k !expensive -j1" check-local
-}
-
-test_expensive_one_multibuild() {
-    multibuild_default_target C && emake TESTSUITEFLAGS="-k expensive -j1" check-local
+src_test() {
+    emake TESTSUITEFLAGS="-k !expensive -j1" check-local
 }
 
 src_test_expensive() {
-    easy-multibuild_run_phase
+    emake TESTSUITEFLAGS="-k expensive -j1" check-local
 }
 
 src_install() {
-    easy-multibuild_src_install
+    default
 
-    for f in $(find "${IMAGE}" -type f -name config.guess -o -name config.sub); do
+    edo cd "${IMAGE}"
+    for f in $(find . -type f -name config.guess -o -name config.sub); do
         edo rm ${f}
         edo ln -s /usr/share/gnuconfig/${f##*/} "${f}"
     done

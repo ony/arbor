@@ -3,6 +3,8 @@
 # Based in part upon 'docbook-sgml-utils-0.6.14.ebuild' from Gentoo, which is:
 #     Copyright 1999-2008 Gentoo Foundation
 
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 1.11 1.10 ] ]
+
 SUMMARY="Shell scripts to manage DocBook documents"
 DESCRIPTION="
 docbook-utils (aka docbook-tools) is a collection of all the free software
@@ -58,15 +60,31 @@ DEPENDENCIES="
 #        app-text/docbook-xml-simple-dtd:4.1.2.4
 
 DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}"/${PNV}-grep-2.7.patch )
-DEFAULT_SRC_CONFIGURE_PARAMS=( --hates=docdir )
+
+DEFAULT_SRC_CONFIGURE_PARAMS=(
+    --hates=datarootdir
+    --hates=docdir
+    --datadir=/usr/share
+)
+
 DEFAULT_SRC_INSTALL_PARAMS=( htmldir="/usr/share/doc/${PNVR}/html" )
+
+src_prepare() {
+    edo sed -e "/^sgmldudir = /s:\$(prefix)\(.*\):/usr\1:" \
+            -i Makefile.am \
+            -i backends/Makefile.am \
+            -i frontends/Makefile.am \
+            -i helpers/Makefile.am
+
+    autotools_src_prepare
+}
 
 src_install () {
    default
 
    if option !jadetex ; then
         for i in dvi pdf ps ; do
-            edo rm "${IMAGE}"/usr/bin/docbook2${i}
+            edo rm "${IMAGE}"/usr/$(exhost --target)/bin/docbook2${i}
             edo rm "${IMAGE}"/usr/share/sgml/docbook/utils-${PV}/backends/${i}
             edo rm "${IMAGE}"/usr/share/man/man1/docbook2${i}.1
         done

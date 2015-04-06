@@ -7,7 +7,7 @@ WORK="${WORKBASE}/${MY_PNV}"
 
 require gnu [ suffix=gz ]
 
-export_exlib_phases src_prepare src_install
+export_exlib_phases src_prepare src_install pkg_preinst
 
 if [[ ${PV} == *_p* ]] ; then
     PATCH_LEVEL=${PNV##*_p}
@@ -30,16 +30,17 @@ DOWNLOADS+=" ftp://ftp.cwru.edu/pub/${PN}/${MY_PNV}.tar.gz"
 
 if (( PATCH_LEVEL )) ; then
     DOWNLOADS+="
-    $(for ((i=1; i<=PATCH_LEVEL; i++)); do
-        printf "mirror://gnu/bash/${MY_PNV}-patches/${MY_PNV//[.-]}-%03d\n" ${i}
-    done)"
+        $(for (( i=1; i <= PATCH_LEVEL; i++ )) ; do
+            printf "mirror://gnu/bash/${MY_PNV}-patches/${MY_PNV//[.-]}-%03d\n" ${i}
+          done)
+    "
 fi
 
 REMOTE_IDS="freecode:gnu${PN}"
 
 LICENCES="GPL-3"
 SLOT="0"
-MYOPTIONS=""
+MYOPTIONS="parts: binaries configuration documentation"
 
 DEPENDENCIES="
     build:
@@ -49,19 +50,22 @@ DEPENDENCIES="
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --bindir=/bin
-    --enable-nls
-    --without-installed-readline
-    --with-curses
+    CC_FOR_BUILD=$(exhost --build)-gcc
+    '--enable-nls'
+    '--without-installed-readline'
+    '--with-curses'
 )
+
 DEFAULT_SRC_INSTALL_EXTRA_PREFIXES=( doc )
 
 bash_src_prepare() {
     if (( PATCH_LEVEL )) ; then
         local i patches=( -p0 )
-        for ((i=1; i<=PATCH_LEVEL; i++)); do
-            patches+=("${FETCHEDDIR}/${MY_PNV//[.-]}-$(printf "%03d" ${i})")
+
+        for (( i=1; i <= PATCH_LEVEL; i++ )) ; do
+            patches+=( "${FETCHEDDIR}/${MY_PNV//[.-]}-$(printf "%03d" ${i})" )
         done
+
         expatch "${patches[@]}"
     fi
 
@@ -72,7 +76,7 @@ bash_src_prepare() {
 bash_src_install() {
     default
 
-    dosym bash bin/sh
+    dosym bash /usr/$(exhost --target)/bin/sh
 
     insinto /etc/bash
     doins "${FILES}"/bashrc
@@ -90,5 +94,19 @@ EOF
 EOF
 
     keepdir /etc/bash/bashrc.d
+
+    expart binaries /usr/$(exhost --target)/bin
+    expart configuration /etc
+    expart documentation /usr/share/{doc,info,man}
+}
+
+bash_pkg_preinst() {
+    if exhost --is-native -q && [[ $(readlink -f "${ROOT##/}"/bin) == ${ROOT##/}/bin ]] ; then
+        # NOTE(compnerd) preserve legacy paths for paludis
+        nonfatal edo rm "${ROOT}"/bin/{bash,sh} &&
+        nonfatal edo cp "${IMAGE}"/usr/$(exhost --build)/bin/bash "${ROOT}"/bin/bash &&
+        nonfatal edo ln -s bash "${ROOT}"/bin/sh ||
+            eerror "Symlinking to /bin/bash and /bin/sh failed"
+    fi
 }
 

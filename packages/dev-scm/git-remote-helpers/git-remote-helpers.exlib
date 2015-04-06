@@ -106,6 +106,6 @@ git-remote-helpers_src_test() {
 }
 
 git-remote-helpers_src_install() {
-    _tool_target D="${IMAGE}" prefix=/usr install install-doc
+    _tool_target D="${IMAGE}" prefix=/usr/$(exhost --target) install install-doc
 }
 

@@ -25,8 +25,8 @@ DEPENDENCIES="
 
 DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}"/${PN}-1.5.1-clang.patch )
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --with-apr=/usr
-    --with-expat=/usr
+    --with-apr=/usr/$(exhost --target)
+    --with-expat=/usr/$(exhost --target)
     --without-freetds
     --without-mysql
     --without-odbc

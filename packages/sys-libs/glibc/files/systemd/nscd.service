@@ -4,8 +4,8 @@ Description=nscd
 [Service]
 Type=forking
 PIDFile=/run/nscd/nscd.pid
-ExecStart=/usr/sbin/nscd
-ExecStop=/usr/sbin/nscd --shutdown
+ExecStart=/usr/host/bin/nscd
+ExecStop=/usr/host/bin/nscd --shutdown
 
 [Install]
 WantedBy=multi-user.target

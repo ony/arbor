@@ -22,9 +22,10 @@ DEPENDENCIES="
 
 DEFAULT_SRC_COMPILE_PARAMS=(
     "PREFIX=/usr"
+    "BINDIR=/usr/$(exhost --target)/bin"
     "MAILRC=/etc/mailxrc"
     "MAILSPOOL=/var/spool/mail"
-    "SENDMAIL=/usr/sbin/sendmail"
+    "SENDMAIL=/usr/$(exhost --target)/bin/sendmail"
     "UCBINSTALL=$(type -P install)"
     -j1
 )

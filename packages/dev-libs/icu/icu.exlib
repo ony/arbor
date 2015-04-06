@@ -1,7 +1,7 @@
 # Copyright 2008 Saleem Abdulrasool <compnerd@compnerd.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require easy-multibuild alternatives
+require alternatives
 
 export_exlib_phases src_install pkg_postinst
 
@@ -14,7 +14,7 @@ REMOTE_IDS="freecode:internationalcomponentsforunicodecc"
 UPSTREAM_CHANGELOG="${HOMEPAGE}/download/$(ever major) [[ lang = en ]]"
 
 LICENCES="icu"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS=""
 
 DEPENDENCIES="
     !dev-libs/icu:0 [[
@@ -24,50 +24,37 @@ DEPENDENCIES="
 
 WORK=${WORKBASE}/${PN}/source
 
-install_one_multibuild() {
-    default
-    if ! multibuild_default_target C; then
-        dodir /usr/${CHOST}/bin
-        edo mv "${IMAGE}"/usr/bin/${PN}-config "${IMAGE}"/usr/${CHOST}/bin
-    fi
+icu_src_install() {
+    local host=$(exhost --target)
 
-    edo pushd "${IMAGE}"/usr/${LIBDIR}
+    default
+
+    edo pushd "${IMAGE}"/usr/${host}/lib
     for library in *.so ; do
-        edo mv "${IMAGE}"/usr/${LIBDIR}/{${library},${library:0:-3}${SLOT}.so}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${LIBDIR}/${library} ${library:0:-3}${SLOT}.so
+        edo mv "${IMAGE}"/usr/${host}/lib/{${library},${library:0:-3}${SLOT}.so}
+        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/lib/${library} ${library:0:-3}${SLOT}.so
     done
 
     edo pushd pkgconfig
     for pc_file in *.pc ; do
-        edo mv "${IMAGE}"/usr/${LIBDIR}/pkgconfig/{${pc_file},${pc_file:0:-3}${SLOT}.pc}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${LIBDIR}/pkgconfig/${pc_file} ${pc_file:0:-3}${SLOT}.pc
+        edo mv "${IMAGE}"/usr/${host}/lib/pkgconfig/{${pc_file},${pc_file:0:-3}${SLOT}.pc}
+        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/lib/pkgconfig/${pc_file} ${pc_file:0:-3}${SLOT}.pc
     done
     edo popd
     edo popd
-}
-
-icu_src_install() {
-    easy-multibuild_src_install
 
     # Rename to allow slotting with alternatives
-    edo pushd "${IMAGE}"/usr/bin
+    edo pushd "${IMAGE}"/usr/${host}/bin
     for binary in * ; do
-        edo mv "${IMAGE}"/usr/bin/${binary}{,${SLOT}}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/bin/${binary} ${binary}${SLOT}
+        edo mv "${IMAGE}"/usr/${host}/bin/${binary}{,${SLOT}}
+        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/bin/${binary} ${binary}${SLOT}
     done
     edo popd
 
-    edo pushd "${IMAGE}"/usr/sbin
-    for binary in * ; do
-        edo mv "${IMAGE}"/usr/sbin/${binary}{,${SLOT}}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/sbin/${binary} ${binary}${SLOT}
-    done
-    edo popd
-
-    edo pushd "${IMAGE}"/usr/include
+    edo pushd "${IMAGE}"/usr/${host}/include
     for header in * ; do
-        edo mv "${IMAGE}"/usr/include/${header}{,${SLOT}}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/include/${header} ${header}${SLOT}
+        edo mv "${IMAGE}"/usr/${host}/include/${header}{,${SLOT}}
+        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/include/${header} ${header}${SLOT}
     done
     edo popd
 
@@ -81,18 +68,19 @@ icu_src_install() {
     done
 }
 
-test_one_multibuild() {
+icu_src_test() {
     emake VERBOSE=1 check
 }
 
 icu_pkg_postinst() {
+    local host=$(exhost --target)
+
     # We can't force alternatives to overwrite files with symlinks
     if has_version --root "dev-libs/icu:0"; then
         local files=(
-            "${ROOT}"/usr/bin/{derb,genbrk,gencfu,gencnval,gendict,genrb,icu-config,icuinfo,makeconv,pkgdata,uconv}
-            "${ROOT}"/usr/sbin/{genccode,gencmn,gennorm2,gensprep,icupkg}
-            "${ROOT}"/usr/include/{layout,unicode}
-            "${ROOT}"/usr/lib{,32,64}/pkgconfig/icu-{i18n,io,le,lx,uc}.pc
+            "${ROOT}"/usr/${host}/bin/{derb,genbrk,gencfu,gencnval,gendict,genrb,icu-config,icuinfo,makeconv,pkgdata,uconv,genccode,gencmn,gennorm2,gensprep,icupkg}
+            "${ROOT}"/usr/${host}/include/{layout,unicode}
+            "${ROOT}"/usr/${host}/lib{,32,64}/pkgconfig/icu-{i18n,io,le,lx,uc}.pc
             "${ROOT}"/usr/share/man/man1/{derb,genbrk,gencfu,gencnval,gendict,genrb,icu-config,makeconv,pkgdata,uconv}.1
             "${ROOT}"/usr/share/man/man8/{genccode,gencmn,gensprep,icupkg}.8
         )

@@ -3,7 +3,10 @@
 # Based in part upon 'zsh-4.3.6.ebuild' from Gentoo, which is:
 #     Copyright 1999-2008 Gentoo Foundation.
 
-export_exlib_phases src_configure src_test src_install
+# Need autotools for AC_FUNC_MMAP, AC_FUNC_STRCOLL
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ none ] ]
+
+export_exlib_phases src_configure src_test src_install pkg_preinst
 
 myexparam -b docs=true
 
@@ -49,8 +52,6 @@ DEFAULT_SRC_INSTALL_EXCLUDE=( FAQ.yo )
 
 zsh_src_configure() {
     econf \
-        --bindir=/bin \
-        --libdir=/usr/${LIBDIR} \
         --htmldir=/usr/share/doc/${PNVR}/html \
         --disable-zsh-valgrind \
         --enable-etcdir=/etc/zsh \
@@ -101,6 +102,13 @@ zsh_src_install() {
 
     if exparam -b docs && option doc ; then
         doins "${WORK}"/Doc/${PN}.pdf
+    fi
+}
+
+zsh_pkg_preinst() {
+    if exhost --is-native -q && [[ $(readlink -f "${ROOT##/}"/bin) == ${ROOT##/}/bin ]] ; then
+        # NOTE(tridactyla) preserve legacy paths for user shells
+        nonfatal edo cp -f "${IMAGE}"/usr/$(exhost --build)/bin/zsh "${ROOT}"/bin/zsh
     fi
 }
 

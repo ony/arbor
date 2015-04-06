@@ -2,7 +2,7 @@
 # Copyright 2014 Heiko Becker <heirecka@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require alternatives easy-multibuild
+require alternatives
 
 export_exlib_phases src_install pkg_postinst
 
@@ -13,7 +13,7 @@ DOWNLOADS="${HOMEPAGE}/files/${PN}src.v${PV}.tar.gz"
 REMOTE_IDS="freecode:lib${PN}"
 
 LICENCES="IJG"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS=""
 
 DEPENDENCIES="
     !media-libs/jpeg:0 [[
@@ -23,7 +23,9 @@ DEPENDENCIES="
 
 DEFAULT_SRC_CONFIGURE_PARAMS=( --enable-shared )
 
-install_one_multibuild() {
+jpeg_src_install() {
+    local host=$(exhost --target)
+
     default
 
     local libraries=(
@@ -33,29 +35,25 @@ install_one_multibuild() {
     )
 
     for (( i = 0; i < ${#libraries[@]}; i++ )); do
-        edo mv "${IMAGE}"/usr/${LIBDIR}/${libraries[i]} "${IMAGE}"/usr/${LIBDIR}/${libraries[i+1]}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${LIBDIR}/${libraries[i]} ${libraries[++i]}
+        edo mv "${IMAGE}"/usr/${host}/lib/${libraries[i]} "${IMAGE}"/usr/${host}/lib/${libraries[i+1]}
+        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/lib/${libraries[i]} ${libraries[++i]}
     done
-}
-
-jpeg_src_install() {
-    easy-multibuild_src_install
 
     # Rename to allow slotting with alternatives light
-    edo pushd "${IMAGE}"/usr/bin
+    edo pushd "${IMAGE}"/usr/${host}/bin
     for binary in * ; do
-        edo mv "${IMAGE}"/usr/bin/${binary}{,${SLOT}}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/bin/${binary} ${binary}${SLOT}
+        edo mv "${IMAGE}"/usr/${host}/bin/${binary}{,${SLOT}}
+        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/bin/${binary} ${binary}${SLOT}
     done
     edo popd
 
     # Create the directory the headers are moved in below
-    edo mkdir "${IMAGE}"/usr/include/libjpeg${SLOT}
+    edo mkdir "${IMAGE}"/usr/${host}/include/libjpeg${SLOT}
 
-    edo pushd "${IMAGE}"/usr/include
+    edo pushd "${IMAGE}"/usr/${host}/include
     for header in *.h ; do
-        edo mv "${IMAGE}"/usr/include/${header} "${IMAGE}"/usr/include/libjpeg${SLOT}/${header}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/include/${header} libjpeg${SLOT}/${header}
+        edo mv "${IMAGE}"/usr/${host}/include/${header} "${IMAGE}"/usr/${host}/include/libjpeg${SLOT}/${header}
+        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/include/${header} libjpeg${SLOT}/${header}
     done
     edo popd
 
@@ -68,12 +66,14 @@ jpeg_src_install() {
 }
 
 jpeg_pkg_postinst() {
+    local host=$(exhost --target)
+
     # We can't force alternatives to overwrite files with symlinks
     if has_version --root "media-libs/jpeg:0"; then
         local files=(
-            "${ROOT}"/usr/bin/{{c,d}jpeg,jpegtran,{rd,wr}jpgcom}
-            "${ROOT}"/usr/include/{jconfig,jerror,jmorecfg,jpeglib}.h
-            "${ROOT}"/usr/lib{,32,64}/libjpeg.{a,la}
+            "${ROOT}"/usr/${host}/bin/{{c,d}jpeg,jpegtran,{rd,wr}jpgcom}
+            "${ROOT}"/usr/${host}/include/{jconfig,jerror,jmorecfg,jpeglib}.h
+            "${ROOT}"/usr/${host}/lib{,32,64}/libjpeg.{a,la}
             "${ROOT}"/usr/share/man/man1/{{c,d}jpeg,jpegtran,{rd,wr}jpgcom}.1
         )
         for f in "${files[@]}" ; do

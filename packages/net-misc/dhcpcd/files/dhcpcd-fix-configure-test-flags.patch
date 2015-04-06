@@ -1,0 +1,30 @@
+Reason: Make sure user-specified flags are used in configure tests
+Upstream: Yes, http://roy.marples.name/projects/dhcpcd/ticket/300
+
+From 8bc0da89d3a2cd834a568d8ca73f2a6d0d08246e Mon Sep 17 00:00:00 2001
+From: Michael Forney <mforney@mforney.org>
+Date: Sat, 9 Nov 2013 23:30:34 -0800
+Subject: [PATCH 2/2] Also add user specified CFLAGS/CPPFLAGS to XCC
+
+---
+ configure | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/configure b/configure
+index d173838..1906a5f 100755
+--- a/configure
++++ b/configure
+@@ -355,8 +355,8 @@ if [ -e "$LDELF" ]; then
+ fi
+ 
+ # Add CPPFLAGS and CFLAGS to CC for testing features
+-XCC="$CC `$SED -n -e 's/CPPFLAGS+=*\(.*\)/\1/p' $CONFIG_MK`"
+-XCC="$XCC `$SED -n -e 's/CFLAGS+=*\(.*\)/\1/p' $CONFIG_MK`"
++XCC="$CC `$SED -n -e 's/CPPFLAGS+\?=*\(.*\)/\1/p' $CONFIG_MK`"
++XCC="$XCC `$SED -n -e 's/CFLAGS+\?=*\(.*\)/\1/p' $CONFIG_MK`"
+ 
+ abort=false
+ # We require the libc to support non standard functions, like getifaddrs
+-- 
+1.8.4.2
+

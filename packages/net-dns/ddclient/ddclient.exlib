@@ -32,7 +32,7 @@ DEPENDENCIES="
 ddclient_pkg_pretend() {
     if [[ -f "${ROOT}"/etc/tmpfiles.d/${PN}.conf ]] ; then
         ewarn "The configuration file /etc/tmpfiles.d/${PN}.conf has been moved to"
-        ewarn "/usr/${LIBDIR}/tmpfiles.d/${PN}.conf and can be safely removed after upgrade"
+        ewarn "/usr/$(exhost --target)/lib/tmpfiles.d/${PN}.conf and can be safely removed after upgrade"
         ewarn "if you did not make any changes to it."
     fi
 }
@@ -41,7 +41,7 @@ ddclient_src_install() {
     default
     dodoc sample*
 
-    dosbin ${PN}
+    dobin ${PN}
 
     if option baselayout ; then
         newinitd "${FILES}"/${PN}.initd ${PN}
@@ -55,7 +55,7 @@ EOF
     fi
 
     if option systemd; then
-        insinto /usr/${LIBDIR}/tmpfiles.d
+        insinto /usr/$(exhost --target)/lib/tmpfiles.d
         hereins ${PN}.conf <<EOF
 d /run/ddclient 0755 ddclient ddclient
 EOF

@@ -2,14 +2,13 @@
 # Distributed under the terms of the GNU General Public License v2
 
 require sourceforge [ suffix=tar.gz ]
-require easy-multibuild
 
 SUMMARY="Stream-oriented XML parser written in C"
 
 LICENCES="MIT"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS="multibuild_c: 32 64"
+MYOPTIONS=""
 
 DEPENDENCIES=""
 

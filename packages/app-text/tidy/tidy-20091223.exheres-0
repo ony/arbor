@@ -22,7 +22,7 @@ DEPENDENCIES="
 
 WORK="${WORKBASE}/${PN}-${MY_PV}"
 
-DEFAULT_SRC_CONFIGURE_PARAMS=( --includedir=/usr/include/${PN} )
+DEFAULT_SRC_CONFIGURE_PARAMS=( --includedir=/usr/$(exhost --target)/include/${PN} )
 
 src_prepare() {
     default
@@ -40,7 +40,7 @@ src_install() {
 
     # To update the manpage, thanks to debian:
     edo ./console/tidy -xml-help > htmldoc/tidy-help.xml
-    edo /usr/bin/xsltproc -o tidy.1 htmldoc/tidy1.xsl htmldoc/tidy-help.xml
+    edo xsltproc -o tidy.1 htmldoc/tidy1.xsl htmldoc/tidy-help.xml
     doman ${PN}.1
 }
 

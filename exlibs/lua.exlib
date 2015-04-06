@@ -136,7 +136,7 @@ lua_get_sharedir() {
 lua_get_libdir() {
     illegal_in_global_scope
 
-    echo -n "/usr/${LIBDIR}/lua/$(lua_get_abi)"
+    echo -n "/usr/$(exhost --target)/lib/lua/$(lua_get_abi)"
 }
 
 lua_install_module() {

@@ -2,14 +2,13 @@
 # Based in part upon previous work copyrighted to Gentoo Foundation.
 # Distributed under the terms of the GNU General Public License v2
 
-require common-metadata easy-multibuild
+require common-metadata
 
 PLATFORMS="~amd64 ~arm ~x86"
 MYOPTIONS="
     ares [[ description = [ Enabled c-ares posix-threaded dns support, disables curl's own threaded resolver ] ]]
     gnutls [[ description = [ Use GnuTLS instead of OpenSSL ] ]]
     idn
-    multibuild_c: 32 64
 "
 DEPENDENCIES="
     build:
@@ -18,15 +17,15 @@ DEPENDENCIES="
         virtual/pkg-config
     build+run:
         app-misc/ca-certificates
-        net-libs/libssh2[>=1.2.8][multibuild_c:*(-)?]
-        sys-libs/zlib[multibuild_c:*(-)?]
-        ares? ( net-dns/c-ares[>=1.6.0][multibuild_c:*(-)?] )
-       !gnutls? ( virtual/libssl[multibuild_c:*(-)?] )
+        net-libs/libssh2[>=1.2.8]
+        sys-libs/zlib
+        ares? ( net-dns/c-ares[>=1.6.0] )
+       !gnutls? ( virtual/libssl )
         gnutls? (
-            dev-libs/gnutls[>=2.12.14][multibuild_c:*(-)?]
-            dev-libs/nettle[multibuild_c:*(-)?]
+            dev-libs/gnutls[>=2.12.14]
+            dev-libs/nettle
         )
-        idn? ( net-dns/libidn[multibuild_c:*(-)?] )
+        idn? ( net-dns/libidn )
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
@@ -58,7 +57,7 @@ src_prepare() {
     default
 }
 
-test_one_multibuild() {
+src_test() {
     cat <<-EOF >> tests/data/DISABLED
 # Work around broken DNS servers, Exherbo #207
 20
@@ -83,19 +82,10 @@ EOF
     esandbox disallow_net --connect "inet6:::1@8999"
 }
 
-install_one_multibuild() {
+src_install() {
     default
 
-    edo mv "${IMAGE}"/usr/include/curl/curlbuild{,-${MULTIBUILD_TARGET}}.h
-}
-
-src_install() {
-    easy-multibuild_src_install
-
     insinto /usr/share/aclocal
-    doins docs/libcurl/libcurl.m4
-
-    insinto /usr/include/curl
-    doins "${FILES}"/curlbuild.h
+    doins "${WORK}"/docs/libcurl/libcurl.m4
 }
 

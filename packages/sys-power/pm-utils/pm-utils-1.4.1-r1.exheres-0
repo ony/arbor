@@ -25,9 +25,9 @@ src_install() {
     default
 
     keepdir /etc/pm/{config,power,sleep}.d
-    edo rm "${IMAGE}"/usr/${LIBDIR}/pm-utils/sleep.d/{01grub,55NetworkManager}
+    edo rm "${IMAGE}"/usr/$(exhost --target)/lib/pm-utils/sleep.d/{01grub,55NetworkManager}
 
-    insinto /usr/${LIBDIR}/pm-utils/video-quirks
+    insinto /usr/$(exhost --target)/lib/pm-utils/video-quirks
     doins "${WORKBASE}"/video-quirks/*.quirkdb
 }
 

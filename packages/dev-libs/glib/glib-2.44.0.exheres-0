@@ -20,18 +20,18 @@ DEPENDENCIES="
         ) [[ description = [ For man pages ] ]]
         gtk-doc? ( dev-doc/gtk-doc[>=1.20] )
     build+run:
-        dev-util/elfutils[>=0.142][multibuild_c:*(-)?]
-        dev-libs/libffi[>=3.0.0][multibuild_c:*(-)?]
+        dev-util/elfutils[>=0.142]
+        dev-libs/libffi[>=3.0.0]
     test:
         dev-util/desktop-file-utils
         gnome-bindings/pygobject:3
-        sys-apps/dbus[>=1.2.14][multibuild_c:*(-)?] [[
+        sys-apps/dbus[>=1.2.14] [[
             note = [ Required for building GDBus tests ]
         ]]
         virtual/pkg-config[>=0.16]
         x11-misc/shared-mime-info
     recommendation:
-        sys-apps/dbus[>=1.2.14][multibuild_c:*(-)?] [[ note = [ Required for GDBus ] ]]
+        sys-apps/dbus[>=1.2.14] [[ note = [ Required for GDBus ] ]]
         dev-libs/glib-networking [[ description = [ Required for GNet ] ]]
     suggestion:
         gnome-desktop/dconf [[ description = [ default GSettings backend ] ]]

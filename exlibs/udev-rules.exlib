@@ -3,7 +3,7 @@
 
 myexparam udev_files=[ "${FILES}"/udev ]
 
-export UDEVRULESDIR="/usr/${LIBDIR}/udev/rules.d"
+export UDEVRULESDIR="/usr/$(exhost --target)/lib/udev/rules.d"
 
 install_udev_files() {
     local udev_files object=

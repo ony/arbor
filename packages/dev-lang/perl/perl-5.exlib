@@ -13,10 +13,18 @@ require alternatives flag-o-matic
 export_exlib_phases src_unpack src_prepare src_configure src_test src_install
 
 myexparam Module_Build_pv=
+myexparam cross_perl_ver=[ ]
+
+# first value:  perlcross version
+# second value: perl version it applies to (if != ${PV})
+exparam -v CROSS_PERL_VER cross_perl_ver[@]
 
 SUMMARY="Perl is a general-purpose programming language originally developed for text manipulation"
 HOMEPAGE="http://www.perl.org"
-DOWNLOADS="mirror://cpan/src/5.0/${PNV}.tar.bz2"
+DOWNLOADS="
+    mirror://cpan/src/5.0/${PNV}.tar.bz2
+    https://github.com/arsv/${PN}-cross/releases/download/${CROSS_PERL_VER[0]}/${PN}-${CROSS_PERL_VER[1]:-${PV}}-cross-${CROSS_PERL_VER[0]}.tar.gz
+"
 
 REMOTE_IDS="cpan:${PN} freecode:${PN}"
 
@@ -38,8 +46,6 @@ DEPENDENCIES="
 
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=( Changes5 )
 
-WORK="${WORKBASE}/build"
-
 define() {
     echo "-D${1}=${2}"
 }
@@ -50,16 +56,25 @@ option_define() {
 
 perl-5_src_unpack() {
     default
-    edo mkdir "${WORK}"
+
+    if [[ -n ${CROSS_PERL_VER[1]} ]]; then
+        # perlcross and perl versions don't match exactly
+        edo cp -a "${WORKBASE}"/${PN}-${CROSS_PERL_VER[1]}/* "${WORK}"
+    fi
 }
 
 perl-5_src_prepare() {
-    edo cd "${WORKBASE}/${PNV}"
     default
 
-    # https://rt.perl.org/rt3//Public/Bug/Display.html?id=113022
-    test-flag-CC -fno-lto && edo sed -e '/if(p())/{n; s/$ldflags/& -fno-lto/}' \
-                                     -i Configure
+    # find errno.h on multiarch
+    edo sed -e "s#/usr/include#/usr/$(exhost --target)/include#g" \
+            -i ext/Errno/Errno_pm.PL
+
+    # TODO(moben) try using the build's perl as miniperl.
+    # might not work at all
+    #    Can't load '/var/tmp/paludis/build/dev-lang-perl-5.18.1/work/perl-5.18.1/ext/Opcode/../../lib/auto/File/Glob/Glob.so'
+    #    for module File::Glob: /var/tmp/paludis/build/dev-lang-perl-5.18.1/work/perl-5.18.1/ext/Opcode/../../lib/auto/File/Glob/Glob.so:
+    #    wrong ELF class: ELFCLASS32 …
 }
 
 perl-5_src_configure() {
@@ -67,8 +82,8 @@ perl-5_src_configure() {
     # Alternatives manages executables in ${perlbindir}
     # Libraries go into ${perllibdir}/core_perl/${SLOT}-arch/CORE/, which is appended to LDPATH
     # `man 1` are installed with a version
-    perlprefix=/usr
-    perllibdir=${perlprefix}/${LIBDIR}/perl5
+    perlprefix=/usr/$(exhost --target)
+    perllibdir=${perlprefix}/lib/perl5
     perlbindir=${perlprefix}/bin
 
     # -Dfoo = define foo, -Ufoo = undefine foo.
@@ -76,34 +91,32 @@ perl-5_src_configure() {
     # -O3 breaks ext/XS/APItest/t/exception.t and maybe other stuff
     replace-flags -O3 -O2
 
+    # Uses ld where it should really use cc
+    # normal Configure doesn't respect LD and thus avoids this problem, but perlcross does.
+    export LD=${CC}
+
+    # TODO(moben) doesn't respect CC & friends for miniperl, because that is built for $(exhost --build)
+    # currently (2013-09-27) no way to do this in exheres-0 afaics
+
     local myconf=(
-        "${WORKBASE}/${PNV}/Configure"
-        -des
+        --build=$(exhost --build)
+        --target=$(exhost --target)
+        --target-tools-prefix=$(exhost --tool-prefix)
+        --prefix=${perlprefix}
         $(define cf_by Exherbo)
-        "$(define cc     "${CC}"    )"
-        "$(define ar     "${AR}"    )"
-        "$(define nm     "${NM}"    )"
-        "$(define ranlib "${RANLIB}")"
-        $(define prefix       ${perlprefix})
-        $(define vendorprefix ${perlprefix})
-        $(define siteprefix   ${perlprefix})
-        "$(define optimize "${CFLAGS}"  )"
-        "$(define ldflags  "${LDFLAGS}" )"
         # This probably needs some further work... but should be okay for
         # now. At least parrot breaks if we do not have -${osname} in ${archname}
-        "$(define archname "${CHOST}")"
+        "$(define archname "$(exhost --target)")"
+        "$(define lddlflags "-shared ${LDFLAGS}")"
         $(define privlib    "${perllibdir}/core_perl/${SLOT}-pure"  )
         $(define archlib    "${perllibdir}/core_perl/${SLOT}-arch"  )
         $(define sitelib    "${perllibdir}/site_perl/${SLOT}-pure"  )
         $(define sitearch   "${perllibdir}/site_perl/${SLOT}-arch"  )
         $(define vendorlib  "${perllibdir}/vendor_perl/${SLOT}-pure")
         $(define vendorarch "${perllibdir}/vendor_perl/${SLOT}-arch")
-        $(define perlpath    "${perlbindir}/${PN}${SLOT}")
-        $(define startperl "#!${perlbindir}/${PN}${SLOT}")
-        $(define scriptdir ${perlbindir})
-        $(define libperl libperl.so.1.${SLOT})
-        -Duseshrplib
-        -Dmksymlinks
+        $(define perlpath "${perlbindir}/${PN}${SLOT}")
+        $(define sharedir /usr/share)
+        -Dusevendorprefix
         -Duselargefiles
         -Uinstallusrbinperl
         -Ui_ndbm
@@ -111,14 +124,26 @@ perl-5_src_configure() {
         $(option_define gdbm)i_gdbm
         $(option_define berkdb)i_db
     )
+    if ever at_least 0.9.1 ${CROSS_PERL_VER[0]}; then
+        myconf+=(
+            -Dusesoname
+        )
+    else
+        myconf+=(
+            $(define libperl libperl.so.1.${SLOT})
+            -Duseshrplib
+        )
+    fi
 
-    edo sh "${myconf[@]}" "${PERL5_CONFIGURE_PARAMS[@]}"
+    edo ./configure "${myconf[@]}" "${PERL5_CONFIGURE_PARAMS[@]}"
 }
 
 perl-5_src_test() {
     # This is necessary for the ExtUtils::Embed tests
-    edo ln -s libperl.so.1{.${SLOT},}
-    edo ln -s libperl.so{.1,}
+    if ! ever at_least 0.9.1 ${CROSS_PERL_VER[0]}; then
+        edo ln -s libperl.so.1{.${SLOT},}
+        edo ln -s libperl.so{.1,}
+    fi
 
     # This is necessary for t/cachepropagate-unix.t
     esandbox allow_net "unix:${TEMP}/**"
@@ -131,7 +156,7 @@ perl-5_src_test() {
 
     [[ -v http_proxy ]] && unset http_proxy
 
-    TEST_JOBS="${EXJOBS:-1}" emake test_harness
+    TEST_JOBS="${EXJOBS:-1}" emake test
 
     esandbox disallow_net "unix:${TEMP}/**"
     esandbox disallow_net "unix:${WORK}/t/sock-*"
@@ -141,18 +166,26 @@ perl-5_src_test() {
 
 perl-5_src_install() {
     default
-    perlprefix=usr
-    perllibdir=${perlprefix}/${LIBDIR}/perl5
+    perlprefix=usr/$(exhost --target)
+    perllibdir=${perlprefix}/lib/perl5
     perlbindir=${perlprefix}/bin
 
     edo cd "${IMAGE}"
 
-    # Library symlinks
-    local corelibdir=${perllibdir}/core_perl/${SLOT}-arch/CORE
-    dosym libperl.so.1.${SLOT} ${corelibdir}/libperl.so.1
-    dosym libperl.so.1         ${corelibdir}/libperl.so
+    if ! ever at_least 0.9.1 ${CROSS_PERL_VER[0]}; then
+        # Library symlinks
+        local corelibdir=${perllibdir}/core_perl/${SLOT}-arch/CORE
+        if ever at_least 0.9.1 ${CROSS_PERL_VER[0]}; then
+            dosym libperl.so.${PV} ${corelibdir}/libperl.so.${SLOT}
+            dosym libperl.so.${PV} ${corelibdir}/libperl.so
+        else
+            dosym libperl.so.1.${SLOT} ${corelibdir}/libperl.so.1
+            dosym libperl.so.1         ${corelibdir}/libperl.so
+        fi
+    fi
 
-    # We only want /usr/bin/perl5.8.8, not /usr/bin/perl (without the dash, standard across distros)
+    # We only want /usr/$(exhost --target)/bin/perl5.8.8, not /usr/$(exhost --target)/bin/perl (without the dash, standard across distros)
+    # The former gets stripped by the buildsystem, so move the other one over it instead of removing
     edo mv ${perlbindir}/${PN}{,${SLOT}}
     edo ln -sf ${PN}${SLOT} ${perlbindir}/${PN}$(ever range 1-3)
 
@@ -160,7 +193,7 @@ perl-5_src_install() {
     keepdir ${perllibdir}/{site,vendor}_perl/${SLOT}-{arch,pure}
 
     # We don't need packlists or perllocal.pod
-    edo find usr/${LIBDIR} -type f -name .packlist -or -name perllocal.pod -delete
+    edo find usr/$(exhost --target)/lib -type f -name .packlist -or -name perllocal.pod -delete
 
     # Discard man3 manpages (use perldoc)
     edo rm -r usr/share/man/man3

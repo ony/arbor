@@ -1,666 +1,232 @@
-# Copyright 2007 Bryan Østergaard <kloeri@exherbo.org>
-# Copyright 2008, 2009, 2010 Ingmar Vanhassel <ingmar@exherbo.org>
-# Copyright 2008-2010 Bo Ørsted Andresen <zlin@exherbo.org>
-# Copyright 2009,2011-2014 Saleem Abdulrasool <compnerd@compnerd.org>
+# Copyright 2012 © Saleem Abdulrasool <compnerd@compnerd.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require multibuild
-require alternatives versionator
-require gnu [ suffix=bz2 subdir=${PNV} ]
+require gnu [ suffix=bz2 ]
+require alternatives
 
-if [[ ${PV} == *_pre* ]] ; then
-    DOWNLOADS="ftp://gcc.gnu.org/pub/gcc/snapshots/$(ever range 1-2)-${PV##*_pre}/${PN}-$(ever range 1-2)-${PV##*_pre}.tar.bz2"
-fi
-
-ECJ_JAR_PV=4.5
-DOWNLOADS+=" java? ( mirror://sourceware/java/ecj-${ECJ_JAR_PV}.jar )"
-
-export_exlib_phases src_unpack src_prepare src_configure src_compile src_test_expensive src_install \
-    pkg_postinst pkg_prerm pkg_postrm
-
-SUMMARY="GNU Compiler Collection"
+SUMMARY="stand alone compiler"
 
 LICENCES="GPL-2"
 SLOT="$(ever range 1-2)"
-
-MYOPTIONS="
-    ada
-    doc
-    fortran
-    graphite        [[ description = [ enable support for Graphite based loop optimizations ] ]]
-    java
-    propolice
-    objc            [[ description = [ build support for the Objective C code language ] ]]
-    obj-c++         [[ description = [ build support for the Objective C++ language ] ]]
-    objc-runtime    [[ description = [ build the Objective-C runtime (needed for building Objective-C code) ] ]]
-    openmp          [[ description = [ build support for OpenMP ] ]]
-
-    (
-        linguas:
-            be ca da de el eo es fi fr hr id ja nl ru sr sv tr uk vi zh_CN zh_TW
-    )
+CROSS_COMPILE_TARGETS="
+    arm-exherbo-linux-gnueabi
+    i686-pc-linux-gnu
+    x86_64-pc-linux-gnu
 "
-
-if ever at_least 4.7 ; then
-    MYOPTIONS+="
-        sanitizers      [[ description = [ build sanitizers (ASAN, TSAN, UBSAN) ] ]]
-    "
-fi
-
-if ever at_least 4.9 ; then
-    MYOPTIONS+="
-        cilk            [[ description = [ build CILK and CILK+ runtime and support ] ]]
-    "
-fi
+MYOPTIONS="
+    ( targets: ${CROSS_COMPILE_TARGETS} )
+    threads [[ description = [ build with threading support; requires target libc ] ]]
+"
 
 DEPENDENCIES="
-    build:
-        sys-devel/gettext
-        sys-devel/make
-        ada? ( || ( sys-devel/gcc[ada] dev-lang/gnat ) )
-        doc? ( app-doc/doxygen[>=1.5.1] )
-        java? ( app-arch/unzip app-arch/zip )
     build+run:
-        dev-libs/mpc:=[>=0.8.1]
-    test-expensive:
-        dev-util/dejagnu
-        sys-devel/autogen
-        dev-libs/mpc:=[>=0.8.1]
-        dev-libs/mpfr:=[>=2.3]
-    build+run:
-        sys-devel/binutils[>=2.20.1] [[ note = [ minimal version of binutils for LTO ] ]]
+        !sys-devel/static-gcc [[
+            description = [ static-gcc was moved back to gcc. ]
+            resolution = uninstall-blocked-after
+        ]]
+    run:
+        sys-devel/binutils[targets:*(-)?]
 "
+#   build:
+#       $(for host in ${CROSS_COMPILE_TARGETS} ; do
+#           echo hosts:${host}? ( sys-devel/binutils[targets:${host}] )
+#         done)
+#   buil+run:
+#       sys-libs/glibc[hosts:*(-)?]
 
-# GCC 4.6+ no longer depends on libelf for LTO
-if ! ever at_least 4.6 ; then
-    DEPENDENCIES+="
-        build+run:
-            dev-util/elfutils[>=0.143] [[ note = [ required for link-time optimisation ] ]]
-    "
-fi
+DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}/${PN}-${SLOT}-exherbo-multiarch-paths.patch"
+                              "${FILES}/${PN}-${SLOT}-exherbo-gold-sysroot-support.patch" )
 
-if ever at_least 4.8 ; then
-    DEPENDENCIES+="
-        build+run:
-            dev-libs/mpfr:=[>=2.4.0]
-    "
-elif ever at_least 4.6 ; then
-    DEPENDENCIES+="
-        build+run:
-            dev-libs/mpfr:=[>=2.3]
-    "
-fi
+gcc_pkg_setup() {
+    local target=
 
-if ever at_least 4.7 ; then
-    DEPENDENCIES+="
-        build+run:
-            dev-libs/gmp:=[>=4.2]
-    "
-else
-    DEPENDENCIES+="
-        build+run:
-            dev-libs/gmp:=[>=4.1]
-    "
-fi
+    for target in ${CROSS_COMPILE_TARGETS} ; do
+        local target_cflags_var=${target//-/_}_CFLAGS
 
-# NOTE(?) upstream says it is a build time dependency, but uninstall breaks at least gcc-4.6,
-# probably also gcc[>=4.4]
-if ever at_least 4.8 ; then
-    DEPENDENCIES+="
-        build+run:
-            graphite? (
-                dev-libs/cloog:=[>=0.17&<0.19]
-                dev-libs/isl:=[>=0.10&<0.13]
-            )
-    "
-elif ever at_least 4.7 ; then
-    DEPENDENCIES+="
-        build+run:
-            graphite? (
-                dev-libs/ppl:=[>=0.11]
-                || ( dev-libs/cloog:=[>=0.16.1] dev-libs/cloog-ppl[>=0.15.5] )
-            )
-    "
-else
-    DEPENDENCIES+="
-        build+run:
-            graphite? (
-                dev-libs/ppl:=[>=0.11]
-                dev-libs/cloog-ppl[>=0.15.5]
-            )
-    "
-fi
-
-# go support
-if ever at_least 4.6 ; then
-    MYOPTIONS+=" go [[ description = [ Build support for the Go programming language ] ]]"
-fi
-
-REMOTE_IDS="freecode:${PN}"
-
-UPSTREAM_RELEASE_NOTES="${HOMEPAGE}${PN}-${SLOT}/"
-UPSTREAM_CHANGELOG="${UPSTREAM_RELEASE_NOTES}changes.html"
-UPSTREAM_DOCUMENTATION="${HOMEPAGE}onlinedocs/libstdc++/libstdc++-html-USERS-${SLOT}/ [[ description = [ API documentation ] ]]"
-
-RESTRICT="test" # tests are expensive
-
-WORK="${WORKBASE}/build"
-ECONF_SOURCE="${WORKBASE}/${PNV/_p?(re)/-}"
-
-if ! ever at_least 4.8 ; then
-    DEFAULT_SRC_COMPILE_PARAMS=( bootstrap )
-fi
-
-gcc_src_unpack() {
-    if option java ; then
-        unpack --if-compressed ${ARCHIVES//ecj-${ECJ_JAR_PV}.jar}
-        edo cp "${FETCHEDDIR}"/ecj-${ECJ_JAR_PV}.jar "${ECONF_SOURCE}"/ecj.jar
-    else
-        default
-    fi
-    edo mkdir "${WORK}"
-}
-
-gcc_src_prepare() {
-    edo cd  "${WORKBASE}/${PNV/_p?(re)/-}"
-
-    # TODO(compnerd) -fuse-ld to override the linker when GCC 4.8 is the oldest GCC supported.
-    # Until then, because we must use the GCC_EXEC_DIR override parameter -B path to override the
-    # selection of ld for certain packages (e.g. glibc), allow setting a prefixed linker without an
-    # absolute path.  Do the same for the assembler to keep the parallel values similar.
-    # This check needs to be modified to support prefixed tools to be used.
-    edo sed -e 's,DEFAULT_LINKER+set,DEFAULT_LINKER+permissive,'        \
-            -e 's,DEFAULT_ASSEMBLER+set,DEFAULT_ASSEMBLER+permissive,'  \
-            -i "gcc/configure"
-
-    # Do not try fix the systems header files.
-    edo sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
-    default
+        # NOTE(compnerd) ensure that CFLAGS_FOR_TARGET are specified by the user as otherwise the
+        # generated target components will be invalid as they will be compiled with CFLAGS for the
+        # host.
+        if option targets:${target}; then
+            [[ -n ${!target_cflags_var} ]] || die "CFLAGS for ${target} are not set"
+        fi
+    done
 }
 
 gcc_src_configure() {
-    local supported_c_build_targets=( ${MULTIBUILD_C_TARGETS} )
-    local language= languages=( c c++ )
-    local enable_multilib=
-    local cloog_backend=
+    local target=
 
-    # support for optional languages
-    for language in ada fortran java objc obj-c++ ; do
-        option ${language} && languages+=( ${language} )
-    done
+    for target in ${CROSS_COMPILE_TARGETS} ; do
+        local libpath=/usr/${target}/lib
+        local gxx_incdir=/usr/${target}/include/c++/${PV}
+        local target_cflags_var=${target//-/_}_CFLAGS
+        local target_ldflags_var=${target//-/_}_LDFLAGS
 
-    if ever at_least 4.6 ; then
-        option go && languages+=( go )
-    fi
+        if option !targets:${target} ; then
+            echo "    Cross-Compile Target: ${target} (disabled)"
+            continue
+        fi
 
-    # determine multilib support
-    if [[ ${#supported_c_build_targets[@]} -gt 1 ]]; then
-        enable_multilib='--enable-multilib'
-    else
-        enable_multilib='--disable-multilib'
-    fi
+        echo "    Cross-Compile Target: ${target}"
 
-    # select cloog backend
-    cloog_backend=ppl-legacy
-    if ever at_least 4.7 && has_version --root dev-libs/cloog ; then
-        cloog_backend=isl
-    fi
+        edo mkdir -p "${WORKBASE}/build/${target}"
+        edo cd "${WORKBASE}/build/${target}"
 
-    # NOTE(compnerd) GNU libc v2.4+ provides SSP; however, libc headers may not be properly parsed,
-    # so explicitly inform the compiler about this
-    cat > config.cache <<- EOF
+        # NOTE(compnerd) we pass gcc_cv_objdump as we are using an out of tree binutils, and the
+        # default will not prefix the target as necessary.
+        # NOTE(compnerd) GNU libc v2.4+ provide SSP; however, the check for it is based upon a grep
+        # of features.h which is inaccessible to us at this point.  Inform the compiler we will be
+        # running against GNU libc v2.4+
+        cat > config.cache <<- EOF
+gcc_cv_objdump=${target}-objdump
 gcc_cv_libc_provides_ssp=yes
 EOF
 
-    # NOTE(compnerd) disable bootstrap; the exheres is not meant for GCC development, so there is no
-    # point in rebuilding and rebuilding again just to verify that GCC is able to self-host for most
-    # people.
-
-    # TODO(compnerd) make transactional memory support optional; it requires explicit hardware
-    # support and adds langugae extensions
-    # TODO(compnerd) make vtv an optional feature; it is not free and everything built against it
-    # will need to explicitly depend on the VTV option as it changes vtable information.
-    econf --target=${CHOST}                                         \
-          --cache-file=config.cache                                 \
-          --hates=docdir                                            \
-          --hates=disable-dependency-tracking                       \
-          --libdir=/usr/${LIBDIR}                                   \
-          --with-pkgversion="exherbo ${PNVR}"                       \
-          --program-suffix=-${SLOT}                                 \
-          $(if ever at_least 4.8 ; then
-                echo --disable-bootstrap
-            fi)                                                     \
-          --enable-clocale=gnu                                      \
-          --enable-languages="$(IFS=, ; echo "${languages[*]}")"    \
-          --enable-lto $(! ever at_least 4.6 && echo --with-libelf) \
-          ${enable_multilib}                                        \
-          --enable-nls                                              \
-          $(option_enable fortran libquadmath)                      \
-          $(option_enable fortran libquadmath-support)              \
-          $(option_with graphite cloog)                             \
-          $(if ! ever at_least 4.8 ; then
-              option_with graphite ppl
-            fi)                                                     \
-          $(if ever at_least 4.6 && optionq graphite ; then
-                if ! ever at_least 4.8 ; then
-                    option_enable graphite cloog-backend ${cloog_backend}
-                    if ever at_least 4.7 ; then
-                        echo '--disable-cloog-version-check'
-                    fi
-                fi
-            fi)                                                     \
-          $(option_enable openmp libgomp)                           \
-          $(option_enable objc-runtime libobjc)                     \
-          $(option_enable propolice libssp)                         \
-          --with-as=${CHOST}-as                                     \
-          --with-ld=${CHOST}-ld                                     \
-          $(if ever at_least 4.7 ; then
-                echo --disable-libitm
-            fi)                                                     \
-          $(if ever at_least 4.8 ; then
-                option_enable sanitizers libsanitizer
-            fi)                                                     \
-          $(if ever at_least 4.9 ; then
-                option_enable cilk libcilkrts
-                echo --disable-libvtv --disable-vtable-verify
-                echo --disable-install-libiberty
-            fi)                                                     \
-          --with-system-zlib
+        # NOTE(compnerd) unlike the standard compiler, we do not pass CXXFLAGS_FOR_TARGET here.
+        # This is a bare compiler, supporting only C and does not rely on the system.  The only
+        # thing that is really included in this compiler is the compiler, driver, preprocessor,
+        # and a static version of libgcc which is required to build libc from scratch.  The one
+        # thing that this compiler depends on is the host's copy of zlib to minimise the build.
+        edo env                                             \
+            AR=${CHOST}-ar                                  \
+            RANLIB=${CHOST}-ranlib                          \
+            CFLAGS_FOR_TARGET="${!target_cflags_var}"       \
+            LDFLAGS_FOR_TARGET="${!target_ldflags_var}"     \
+        "${WORKBASE}/${PNV}/configure"         \
+                --cache-file=config.cache                   \
+                --build=${CHOST}                            \
+                --host=${CHOST}                             \
+                --target=${target}                          \
+                --prefix=/usr/${CHOST}                      \
+                --datarootdir=/usr/share                    \
+                --localstatedir=/var                        \
+                --sysconfdir=/etc                           \
+                --disable-dependency-tracking               \
+                --enable-fast-install                       \
+                --enable-serial-configure                   \
+                --disable-bootstrap                         \
+                --disable-decimal-float                     \
+                --disable-install-libiberty                 \
+                --disable-libatomic                         \
+                --disable-libcilkrts                        \
+                --disable-libffi                            \
+                --disable-libgfortran                       \
+                --disable-libgo                             \
+                --disable-libgomp                           \
+                --disable-libitm                            \
+                $(if ! ever at_least 4.9 ; then
+                    echo --disable-libmudflap
+                  fi)                                       \
+                --disable-libobjc                           \
+                --disable-libquadmath                       \
+                --disable-libsanitizer                      \
+                --disable-libssp                            \
+                --disable-libstdcxx                         \
+                --disable-libstdc++-v3                      \
+                --disable-libvtv                            \
+                --disable-vtable-verify                     \
+                --disable-multilib                          \
+                --disable-nls                               \
+                --disable-shared                            \
+                --enable-lto                                \
+                --disable-plugin                            \
+                $(option_enable threads)                    \
+                --enable-languages=c,c++,fortran,objc,obj-c++ \
+                --with-sysroot='""'                         \
+                --with-gxx-include-dir="${gxx_incdir}"      \
+                $(optionq threads || echo --with-newlib)    \
+                $(optionq threads || echo --without-headers)\
+                $(if [[ ${target} == ${CHOST} ]] ; then
+                    echo --program-suffix=-${SLOT}
+                  else
+                    echo --program-transform="s,^,${target}-,;s,$,-${SLOT},"
+                  fi)                                       \
+                --with-lib-path=${libpath}                  \
+                --with-as=/usr/${CHOST}/bin/${target}-as    \
+                --with-ld=/usr/${CHOST}/bin/${target}-ld    \
+                --with-system-zlib                          \
+                --with-multilib-list=
+    done
 }
 
 gcc_src_compile() {
-    # NOTE(compnerd) explicitly pass gcc_cv_libc_provides_ssp through the environment to ensure that
-    # the subconfigures receive the parameter.  Unfortunately, the default configure phases seem to
-    # lose this value
-    gcc_cv_libc_provides_ssp=yes default
-}
+    local target=
 
-gcc_src_test_expensive() {
-    # Increase stack size from 8M to 24M to make
-    # gcc.c-torture/compile/limits-exprparen.c test pass as per
-    # http://gcc.gnu.org/bugzilla/show_bug.cgi?id=31827
-    ever at_least 4.6.1 || ulimit -s 24000
-    emake check
-}
+    for target in ${CROSS_COMPILE_TARGETS} ; do
+        if option !targets:${target} ; then
+            echo "    Cross-Compile Target: ${target} (disabled)"
+            continue
+        fi
 
-__gcc_slot_ada() {
-    local programs=(
-        gnat
-        gnatbind
-        gnatchop
-        gnatclean
-        gnatfind
-        gnatkr
-        gnatlink
-        gnatls
-        gnatmake
-        gnatname
-        gnatprep
-        gnatxref
-    )
-    local program=
+        echo "    Cross-Compile Target: ${target}"
 
-    option ada || return
+        edo cd "${WORKBASE}/build/${target}"
 
-    for program in "${programs[@]}" ; do
-        edo mv "${IMAGE}"/usr/bin/${program}{,-${SLOT}}
+        # NOTE(compnerd) pass gcc_cv_objdump through the environment to allow the sub-configures to
+        # receive the correct value; we also must pass gcc_cv_libc_provides_ssp to ensure that it is
+        # received by the sub-configures.
+        gcc_cv_libc_provides_ssp=yes gcc_cv_objdump=${target}-objdump default
     done
-}
-
-__gcc_slot_java() {
-    local unslotted=(
-        "${IMAGE}"/usr/*/security/classpath.security
-        "${IMAGE}"/usr/share/java/ecj.jar
-    )
-    local extension= item= name=
-
-    option java || return
-
-    for item in "${unslotted[@]}" ; do
-        name=$(basename "${item}")
-        extension=${name#*.}
-
-        edo mv "${item%.${extension}}"{,-${SLOT}}.${extension}
-    done
-}
-
-__gcc_slot_shared_data() {
-    local item= name= page=
-
-    for page in "${IMAGE}"/usr/share/info/*.info ; do
-        name=$(basename "${page}" .info)
-        edo mv "${IMAGE}"/usr/share/info/${name}{,-${SLOT}}.info
-    done
-
-    # NOTE(compnerd) we are currently only moving pages in section 7 as section 1 pages are already
-    # slotted due to the binary naming (c.f. --package-suffix).
-    # TODO(compnerd) consider generalising this so that in the case that new man pages are added,
-    # they will be implicitly slotted.  The logic in __gcc_provide_slot_alternatives is already
-    # agnostic to sections!
-    for page in "${IMAGE}"/usr/share/man/man7/* ; do
-        name=$(basename "${page}" .7)
-        edo mv "${IMAGE}"/usr/share/man/man7/${name}{,-${SLOT}}.7
-    done
-
-    for item in "${IMAGE}"/usr/share/locale/*/*/{cpplib,gcc}.mo ; do
-        [[ -e ${item} ]] || continue
-        name=$(basename "${item}" .mo)
-        edo mv "${item%.mo}"{,-${SLOT}}.mo
-    done
-}
-
-__gcc_slot_runtime() {
-    local libdirs=$(multibuild_get_all_var C LIBDIR || die "could not get LIBDIRs")
-    local libdir= library=
-
-    for libdir in ${libdirs} ; do
-        # to avoid collisions with links as they will be handled properly in pkg_postinst, remove
-        # any symbolic links first
-        for library in "${IMAGE}"/usr/${libdir}/* ; do
-            if [[ -L ${library} ]] ; then
-                edo rm "${library}"
-                # used to sanity check that the link is handled
-                removed+=( "${library/${IMAGE}/${ROOT:-/}}" )
-            fi
-        done
-
-        for library in "${IMAGE}"/usr/${libdir}/* ; do
-            [[ -f ${library} ]] || continue
-
-            library=${library##${IMAGE}}
-            local name=$(basename "${library}") # libffi.so.4.0.1   libstdc++.so.6.0.10 libstdc++.la
-            local extension=${name#*.}          #        so.4.0.1             so.6.0.10           la
-
-            case "${name}" in
-            lib*san*)
-                # ignore sanitizers, they are handled in __gcc_slot_sanitizers
-            ;;
-            # always use newest available so version and create so symlinks
-            libatomic.so*|libffi.so*|libgcc_s.so*|libgfortran.so*|libgcj_bc.so*|libgomp.so*|libitm.so*|libobjc.so*|*.so.0.0.0)
-                # rename /usr/lib/libffi.so.4.0.1 => /usr/lib/libffi-4.3.so.4.0.1
-                edo mv "${IMAGE}${library%.${extension}}"{,-${SLOT}}.${extension}
-
-                symlinks+=( "${library%.${extension}}-${SLOT}.${extension}" )
-                so_symlinks+=( "${library}" )
-            ;;
-            libstdc++.so.*-gdb.py)
-                # skip
-            ;;
-            # slotted properly by upstream (i.e. no collisions between slots), create so symlinks
-            libgcj-tools.so*|libgcj.so*|libgij.so*|libstdc++.so*)
-                [[ ${name} == libstdc++.so.* ]] && libstdcpp="${name}"
-
-                so_symlinks+=( "${library}" )
-            ;;
-            # always use newest available version
-            *.a|*.la|*.spec|*.security|*.properties)
-                # rename /usr/lib/libstdc++.la => /usr/lib/libstdc++-4.3.la
-                edo mv "${IMAGE}${library%.${extension}}"{,-${SLOT}}.${extension}
-
-                symlinks+=( "${library%.${extension}}-${SLOT}.${extension}" )
-            ;;
-            esac
-        done
-    done
-}
-
-__gcc_slot_sanitizers() {
-    local sanitiser=
-    for sanitiser in "${IMAGE}"/usr/${LIBDIR}/lib*san* ; do
-        [[ -f ${santiser} ]] || continue
-
-        local path=${library##${IMAGE}}
-        local name=$(basename "${path}")  # libasan.so.1  libasan.a  libasan_preinit.o
-        local extension=${name#*.}        #         so.1          a                  o
-
-        case name in
-        *) die "unknown santizier; was a new sanitizer added?" ;;
-        libasan*|liblsan*|libtsan*|libubsan*)
-            # rename /usr/lib/libasan.so.1.0.0 => /usr/lib/libasan-4.9.0.so.1.0.0
-            edo mv "${IMAGE}${library%.${extension}}"{,-${SLOT}}.${extension}
-            symlinks+=( "${library%.${extension}}-${SLOT}.${extension}" )
-            if [[ ${extension} =~ so* ]] ; then
-                so_symlinks+=( "${library}" )
-            fi
-        ;;
-        esac
-    done
-}
-
-__gcc_setup_gdb_extension() {
-    local item=
-
-    [[ -d ${IMAGE}/usr/share/gdb/python/auto-load ]] || dodir /usr/share/gdb/python/auto-load
-
-    # GDB extension
-    # c.f. http://gcc.gnu.org/ml/gcc/2009-09/msg00085.html
-    # NOTE(compnerd) these are formatters which are platform agnostic, so simply grab the version
-    # from the primary ABI
-    for item in "${IMAGE}"/usr/${LIBDIR}/*-gdb.py ; do
-        local name=
-
-        [[ -f ${item} ]] || continue
-
-        name=$(basename "${item}")
-        edo mv "${item}" "${IMAGE}/usr/share/gdb/python/auto-load/${name%-gdb.py}"
-
-        nonfatal edo rm "${IMAGE}"/usr/lib*/${name}
-    done
-}
-
-__gcc_provide_slot_alternatives() {
-    local alternatives=( "${PN}" "${SLOT}" "${SLOT}" )
-    local program= item= location= name= section=
-
-    # binaries
-    for program in "${IMAGE}"/usr/bin/*-${SLOT} ; do
-        name=$(basename "${program}" -${SLOT})
-        alternatives+=( "/usr/bin/${name}" "${name}-${SLOT}" )
-    done
-
-    alternatives+=( "/usr/bin/cc" "${CHOST}-gcc-${SLOT}" )
-    alternatives+=( "/usr/bin/c++" "${CHOST}-g++-${SLOT}" )
-
-    # java runtime
-    if option java ; then
-        for item in "${IMAGE}"/usr/*/security/classpath.security ; do
-            alternatives+=( "${ROOT:-/}${item##${IMAGE}/}" "classpath-${SLOT}.security" )
-        done
-
-        alternatives+=( "/usr/share/java/ecj.jar" "ecj-${SLOT}.jar" )
-        alternatives+=( "/usr/share/java/tools.jar" "libgcj-tools-${PV}.jar" )
-    fi
-
-    # info pages
-    for item in "${IMAGE}"/usr/share/info/*-${SLOT}.info ; do
-        name=$(basename "${item}" -${SLOT}.info)
-        alternatives+=( "/usr/share/info/${name}.info" "${name}-${SLOT}.info" )
-    done
-
-    # man pages
-    for item in "${IMAGE}"/usr/share/man/man?/*-${SLOT}.? ; do
-        section=${item##*.}
-        name=$(basename "${item}" -${SLOT}.${section})
-        alternatives+=( "/usr/share/man/man${section}/${name}.${section}" "${name}-${SLOT}.${section}" )
-    done
-
-    # locale data
-    for item in "${IMAGE}"/usr/share/locale/*/*/{cpplib,gcc}-${SLOT}.mo ; do
-        [[ -e ${item} ]] || continue
-        name=$(basename "${item}" -${SLOT}.mo)
-        location=$(dirname "${item}")
-        alternatives+=( "${ROOT:-/}${location##${IMAGE}/}/${name}.mo" "${name}-${SLOT}.mo" )
-    done
-
-    # provide alternatives
-    alternatives_for "${alternatives[@]}"
 }
 
 gcc_src_install() {
-    if ever at_least 4.9 ; then
-        # TODO(compnerd) figure out why this hack is needed
-        cd "${WORK}"
-        edo emake -j 1 DESTDIR="${IMAGE}" install
-    else
-        default
-    fi
+    local target= alternatives=()
 
-    local tool
-    for tool in cpp gcov ; do
-        edo cp "${IMAGE}"/usr/bin/{,${CHOST}-}${tool}-${SLOT}
-    done
+    for target in ${CROSS_COMPILE_TARGETS} ; do
+        if option !targets:${target} ; then
+            echo "    Cross-Compile Target: ${target} (disabled)"
+            continue
+        fi
 
-    # precompiled headers
-    local precompiled_headers=( "${WORK}"/${CHOST}/libstdc++-v3/include/${CHOST}/bits/*.gch )
-    if [[ -f ${precompiled_headers[0]} ]] ; then
-        insinto /usr/include/c++/${MY_PV:-${PV}}/${CHOST}/bits
-        doins -r "${WORK}"/${CHOST}/libstdc++-v3/include/${CHOST}/bits/*.gch
-    fi
+        echo "    Cross-Compile Target: ${target}"
 
-    if option doc; then
-        insinto /usr/share/doc/${PNVR}/html
-        edo pushd "${WORK}"/${CHOST}/libstdc++-v3/doc
-        emake doc-html-doxygen
-        doins -r doxygen/html/*
+        edo cd "${WORKBASE}/build/${target}"
+
+        emake -j1 DESTDIR="${IMAGE}" install
+        edo rm "${IMAGE}/usr/${CHOST}/bin/${target}-gcc-${PV}"
+        if [[ ${target} == ${CHOST} ]] ; then
+            # TODO(compnerd) tweak build to automatically name these tools properly
+            for tool in c++-${SLOT} cpp-${SLOT} g++-${SLOT} gcov-${SLOT} gfortran-${SLOT} ; do
+                edo mv "${IMAGE}"/usr/${CHOST}/bin/{,${target}-}${tool}
+                nonfatal edo mv "${IMAGE}"/usr/share/man/man1/{,${target}-}${tool}.1
+            done
+            for tool in gfortran ; do
+                nonfatal edo mv "${IMAGE}"/usr/share/info/${tool}{.info,-${SLOT}.info}
+            done
+            for tool in gcc-${SLOT} gcc-ar-${SLOT} gcc-nm-${SLOT} gcc-ranlib-${SLOT} ; do
+                edo rm "${IMAGE}/usr/${CHOST}/bin/${tool}"
+                nonfatal edo rm "${IMAGE}/usr/share/man/man1/${tool}.1"
+            done
+        fi
+
+        edo pushd "${IMAGE}"
+        for tool in usr/"${CHOST}"/bin/${target}-*-${SLOT}; do
+            alternatives+=( /"${tool%-${SLOT}}" "${tool##*/}" )
+        done
+        for man in usr/share/man/man*/*.*; do
+            local ext=${man##*.}
+            # some are already slotted due to --program-suffix, some aren't
+            [[ ${man} =~ -${SLOT}.${ext}$ ]] && man=${man%-${SLOT}.${ext}}.${ext}
+            local name=${man##*/}
+            alternatives+=( /${man} ${name%.${ext}}-${SLOT}.${ext} )
+        done
+        for info in usr/share/info/*.info; do
+            # some are already slotted due to --program-suffix, some aren't
+            [[ ${info} =~ -${SLOT}.info$ ]] && info=${info%-${SLOT}.info}.info
+            local name=${info##*/}
+            alternatives+=( /${info} ${name%.info}-${SLOT}.info )
+        done
+        for locale in usr/share/locale/*/*/*.mo; do
+            [[ -e ${locale} ]] || continue
+            local name=${locale##*/}
+            alternatives+=( /${locale} ${name%.mo}-${SLOT}.mo )
+        done
         edo popd
-    fi
-
-    __gcc_slot_ada
-    __gcc_slot_java
-    __gcc_slot_runtime
-    __gcc_slot_sanitizers
-    __gcc_slot_shared_data
-    __gcc_setup_gdb_extension
-    __gcc_provide_slot_alternatives
-
-    # fix libstdc++.so symlink
-    local libdirs=$(multibuild_get_all_var C LIBDIR || die "could not get all LIBDIRs") libdir=
-    for libdir in ${libdirs}; do
-        edo rewrite_so_symlink ${libstdcpp} "${IMAGE}"/usr/${libdir} /usr/${libdir}
     done
 
-    # nuke empty dir if applicable
-    nonfatal edo rmdir "${IMAGE}/usr/${LIBDIR}/${PN}/${CHOST}/${MY_PV:-${PV}}/finclude"
+    alternatives_for gcc ${SLOT} ${SLOT} "${alternatives[@]}"
 
-    local dir=
-    for dir in "${IMAGE}"/usr/${LIBDIR}/${PN}/${CHOST}/${MY_PV:-${PV}}/include{-fixed,} ; do
-        if [[ -d ${dir} ]] ; then
-            edo find "${dir}" -type d -empty -delete
-        fi
-    done
+    edo find "${IMAGE}" -depth -type d -empty -delete
 }
 
-myln() {
-    nonfatal edo ln -fs "${1}" "${2}" || { eerror "Creating ${2} symlink failed"; return $?; }
-    return 0
-}
-
-rewrite_symlink() {
-    local x ignore lib ext slot versions=() versions_sorted=() latest_slot
-    if [[ ${1} == --ignore ]]; then
-        ignore=${2}; shift
-    fi
-    lib=${1%-${SLOT}.*}
-    ext=${1#*-${SLOT}.}
-    for x in "${2}"/${lib}-+([[:digit:].]).${ext}; do
-        [[ ! -f ${x} || ${x##*/} == ${ignore} ]] && continue
-        slot=${x##*/${lib}-}
-        versions+=( "${slot%.${ext}}" )
-    done
-    if [[ ${#versions[@]} -le 0 ]]; then
-        eerror "Could not rewrite ${1/-${SLOT}}, no other versions available"
-        return 127
-    fi
-    versions_sorted=( $(version_sort_lowest_first "${versions[@]}") )
-    latest_slot=${versions_sorted[${#versions_sorted[@]}-1]}
-    myln ${lib}-${latest_slot}.${ext} "${2}"/${lib}.${ext}
-}
-
-rewrite_so_symlink() {
-    local ret=0 d l ignore ignored lib versions=() versions_sorted=() latest
-    if [[ ${1} == --ignore ]]; then
-        ignore=${2}; shift
-    fi
-    lib=${1%%+([[:digit:].])}; shift
-    for d in "$@"; do
-        for l in "${d}"/${lib}.+([[:digit:].]); do
-            [[ ! -f ${l} ]] && continue
-            [[ ${l##*/} == ${ignore} ]] && ignored=true && continue
-            versions+=( "${l##*/${lib}.}" )
-        done
-    done
-    if [[ ${#versions[@]} -le 0 ]]; then
-        [[ -n ${ignore} && -n ${ignored} ]] && return 0
-        eerror "Could not rewrite ${lib}, no other versions available"
-        return 127
-    fi
-    versions_sorted=( $(version_sort_lowest_first "${versions[@]}") )
-    latest=${lib}.${versions_sorted[${#versions_sorted[@]}-1]}
-    while [[ ${latest} == ${lib}.* ]]; do
-        myln ${latest} "${1}"/${latest%.*} || ((++ret))
-        latest=${latest%.*}
-    done
-    return $ret
-}
-
-cleanup_dangling_libstdcpp_symlinks() {
-    local l
-    for l in "${ROOT}"/usr/libstdc++.so*; do
-        if [[ -L ${l} && ! -f ${l} ]]; then
-            nonfatal edo rm "${l}" || eerror "Failed to clean up ${l}"
-        fi
-    done
-}
-
-handle_symlinks() {
-    local x
-    # generate symlinks for libraries that were manually slotted in src_install, e.g.: libffi.so.4.0.1 -> libffi-4.3.so.4.0.1
-    for x in "${symlinks[@]}"; do
-        rewrite_symlink ${1} "${x##*/}" "${ROOT}${x%/*}"
-    done
-
-    # generate so symlinks, e.g.: libffi.so -> libffi.so.4 -> libffi.so.4.0 -> libffi.so.4.0.1
-    for x in "${so_symlinks[@]}"; do
-        rewrite_so_symlink ${1} ${x##*/} "${ROOT}"/${x%/*}
-    done
-
-    cleanup_dangling_libstdcpp_symlinks
-}
-
-gcc_pkg_postinst() {
-    alternatives_pkg_postinst
-
-    handle_symlinks
-
-    # get notification if symlinks were removed during src_install that wasn't handled above in pkg_postinst
-    for x in "${removed[@]}"; do
-        [[ ! -e ${ROOT}${x} ]] && eerror "/${x} was removed and never recreated"
-    done
-}
-
-gcc_pkg_prerm() {
-    alternatives_pkg_prerm
-
-    local ignore
-    [[ -n ${REPLACED_BY_ID} ]] || ignore=--ignore
-    handle_symlinks ${ignore}
-}
-
-gcc_pkg_postrm() {
-    local x
-    for x in "${symlinks[@]}"; do
-        if [[ -L ${ROOT}${x/-${SLOT}} && ! -e ${ROOT}${x/-${SLOT}} ]]; then
-            nonfatal edo rm "${ROOT}${x/-${SLOT}}" || eerror "Failed to clean up dangling symlink"
-        fi
-    done
-
-    for x in "${so_symlinks[@]%.*}"; do
-        while [[ ${x} == */*.so* ]]; do
-            if [[ -L ${ROOT}${x} && ! -e ${ROOT}${x} ]]; then
-                nonfatal edo rm "${ROOT}${x}" || eerror "Failed to clean up dangling symlink"
-            fi
-            x=${x%.*}
-        done
-    done
-}
+export_exlib_phases pkg_setup src_configure src_compile src_install
 

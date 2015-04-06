@@ -1,0 +1,30 @@
+Upstream: sen to mailing list
+Reason: libgpgp-error needs a generated config file for cross compiling
+        and there wasn't one for i686-pc-linux-gnu yet.
+
+From a442081762b64b21a42d3718b14ac445f15e583d Mon Sep 17 00:00:00 2001
+From: Heiko Becker <heirecka@exherbo.org>
+Date: Thu, 5 Mar 2015 21:36:04 +0100
+Subject: [PATCH] Add new lock-obj-pub for i686-pc-linux-gnu
+
+---
+ ...ock-obj-pub.i586-pc-linux-gnu.h => lock-obj-pub.i686-pc-linux-gnu.h} | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+ copy src/syscfg/{lock-obj-pub.i586-pc-linux-gnu.h => lock-obj-pub.i686-pc-linux-gnu.h} (92%)
+
+diff --git a/src/syscfg/lock-obj-pub.i586-pc-linux-gnu.h b/src/syscfg/lock-obj-pub.i686-pc-linux-gnu.h
+similarity index 92%
+copy from src/syscfg/lock-obj-pub.i586-pc-linux-gnu.h
+copy to src/syscfg/lock-obj-pub.i686-pc-linux-gnu.h
+index fc2d132..b97273b 100644
+--- a/src/syscfg/lock-obj-pub.i586-pc-linux-gnu.h
++++ b/src/syscfg/lock-obj-pub.i686-pc-linux-gnu.h
+@@ -1,4 +1,4 @@
+-## lock-obj-pub.i586-pc-linux-gnu.h
++## lock-obj-pub.i686-pc-linux-gnu.h
+ ## File created by gen-posix-lock-obj - DO NOT EDIT
+ ## To be included by mkheader into gpg-error.h
+ 
+-- 
+2.3.1
+

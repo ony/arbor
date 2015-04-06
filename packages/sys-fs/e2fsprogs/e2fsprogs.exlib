@@ -3,7 +3,9 @@
 # Based in part upon 'e2fsprogs-1.40.9.ebuild' from Gentoo, which is:
 #     Copyright 1999-2008 Gentoo Foundation
 
-require sourceforge [ suffix=tar.gz ] easy-multibuild
+require sourceforge [ suffix=tar.gz ]
+
+export_exlib_phases src_configure src_test src_install
 
 SUMMARY="Utilities for managing ext2/ext3/ext4 filesystems"
 
@@ -13,16 +15,14 @@ LICENCES="
     MIT [[ note = [ et and ss libraries ] ]]
 "
 SLOT="0"
-MYOPTIONS="
-    multibuild_c: 32 64
-"
+MYOPTIONS=""
 
 DEPENDENCIES="
     build:
         sys-apps/texinfo
         virtual/pkg-config[>=0.20]
     build+run:
-        sys-apps/util-linux[>=2.16.2][multibuild_c:*(-)?] [[ note = [ to ensure that libblkid and libuuid from util-linux-ng is used ] ]]
+        sys-apps/util-linux[>=2.16.2] [[ note = [ to ensure that libblkid and libuuid from util-linux-ng is used ] ]]
 "
 
 # TODO: Find out why most tests are failing under sydbox since 1.42.10
@@ -32,15 +32,12 @@ RESTRICT="test"
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=( RELEASE-NOTES )
 DEFAULT_SRC_INSTALL_PARAMS=( install-libs )
 
-configure_one_multibuild() {
+e2fsprogs_src_configure() {
     # Keep the package from doing silly things
     export ac_cv_path_LDCONFIG=:
     export STRIP=:
 
     econf \
-        --bindir=/bin \
-        --sbindir=/sbin \
-        --libdir=/${LIBDIR} \
         --enable-elf-shlibs \
         --enable-nls \
         --enable-symlink-install \
@@ -53,7 +50,7 @@ configure_one_multibuild() {
         --without-included-gettext
 }
 
-test_one_multibuild() {
+e2fsprogs_src_test() {
     # Not everyone has 2TB of free space.
     edo rm -rf tests/{r_64bit_big_expand,r_bigalloc_big_expand,r_ext4_big_expand}
 
@@ -63,22 +60,13 @@ test_one_multibuild() {
     BLKID_FILE="${HOME}/blkid.tab" default
 }
 
-install_one_multibuild() {
+e2fsprogs_src_install() {
     default
-
-    # Move 'useless' stuff to /usr/
-    dosbin "${IMAGE}"/sbin/mklost+found
-    edo rm -f "${IMAGE}"/sbin/mklost+found
-    dobin "${IMAGE}"/bin/{compile_et,mk_cmds}
-    edo rm -f "${IMAGE}"/bin/{compile_et,mk_cmds}
 
     # e2fsprogs has references to the build directory here
     edo sed -i -e '/^ET_DIR=/s:=.*:=/usr/share/et:' \
-        "${IMAGE}"/usr/bin/compile_et
+        "${IMAGE}"/usr/$(exhost --target)/bin/compile_et
     edo sed -i -e '/^SS_DIR=/s:=.*:=/usr/share/ss:' \
-        "${IMAGE}"/usr/bin/mk_cmds
-
-    dodir /usr/${LIBDIR}/
-    edo mv "${IMAGE}"/{,usr/}${LIBDIR}/pkgconfig
+        "${IMAGE}"/usr/$(exhost --target)/bin/mk_cmds
 }
 

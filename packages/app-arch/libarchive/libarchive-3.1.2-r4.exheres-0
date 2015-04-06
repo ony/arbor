@@ -18,6 +18,8 @@ src_prepare() {
     edo sed -i -e '/test_read_filter_lzop/d' Makefile.am
     edo rm libarchive/test/test_read_filter_lzop*
 
+    expatch "${FILES}"/${PN}-3.0.4-cross-compile.patch
+
     autotools_src_prepare
 }
 

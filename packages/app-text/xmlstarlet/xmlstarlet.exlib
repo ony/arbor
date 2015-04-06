@@ -32,13 +32,13 @@ DEPENDENCIES="
 "
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --with-libxml-prefix=/usr
-    --with-libxslt-prefix=/usr
+    --with-libxml-prefix=/usr/$(exhost --target)
+    --with-libxslt-prefix=/usr/$(exhost --target)
 )
 
 xmlstarlet_src_install() {
     default
 
-    edo mv "${IMAGE}"/usr/bin/xml "${IMAGE}"/usr/bin/xmlstarlet
+    edo mv "${IMAGE}"/usr/$(exhost --target)/bin/xml "${IMAGE}"/usr/$(exhost --target)/bin/xmlstarlet
 }
 

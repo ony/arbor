@@ -27,11 +27,13 @@ DEPENDENCIES+="
 AT_M4DIR=( m4 )
 
 isl_src_install() {
+    local host=$(exhost --target)
+
     default
 
     # Move headers and pkg-config files to a slot compatibel location,...
-    edo mv "${IMAGE}"/usr/include/{isl,isl-${SLOT}}
-    edo mv "${IMAGE}"/usr/${LIBDIR}/pkgconfig/{isl,isl-${SLOT}}.pc
+    edo mv "${IMAGE}"/usr/${host}/include/{isl,isl-${SLOT}}
+    edo mv "${IMAGE}"/usr/${host}/lib/pkgconfig/{isl,isl-${SLOT}}.pc
 
     # ... also prepare to rename the libraries ...
     local libraries=(
@@ -42,22 +44,24 @@ isl_src_install() {
 
     # ... and use alternatives light to get appropriate symlinks
     alternatives=( _isl ${SLOT} ${SLOT}
-        /usr/include/isl isl-${SLOT}
-        /usr/${LIBDIR}/pkgconfig/isl.pc isl-${SLOT}.pc
+        /usr/${host}/include/isl isl-${SLOT}
+        /usr/${host}/lib/pkgconfig/isl.pc isl-${SLOT}.pc
     )
 
     for (( i = 0; i < ${#libraries[@]}; i++ )); do
-        edo mv "${IMAGE}"/usr/${LIBDIR}/${libraries[i]} "${IMAGE}"/usr/${LIBDIR}/${libraries[i+1]}
-        alternatives+=( /usr/${LIBDIR}/${libraries[i]} ${libraries[++i]} )
+        edo mv "${IMAGE}"/usr/${host}/lib/${libraries[i]} "${IMAGE}"/usr/${host}/lib/${libraries[i+1]}
+        alternatives+=( /usr/${host}/lib/${libraries[i]} ${libraries[++i]} )
     done
 
     alternatives_for "${alternatives[@]}"
 }
 
 isl_pkg_postinst() {
+    local host=$(exhost --target)
+
     # We can't force alternatives to overwrite files with symlinks
     if has_version --root "dev-libs/isl:0"; then
-        for f in "${ROOT}"/usr/{include/isl,${LIBDIR}/{libisl.{,l}a,pkgconfig/isl.pc}}; do
+        for f in "${ROOT}"/usr/${host}/{include/isl,lib/{libisl.{,l}a,pkgconfig/isl.pc}}; do
             [[ -e ${f} && ! -L ${f} ]] && nonfatal edo rm -r "${f}";
         done
     fi

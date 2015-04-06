@@ -10,12 +10,36 @@ REMOTE_IDS="freecode:gnu${PN}"
 LICENCES="GPL-3"
 SLOT="0"
 PLATFORMS="~amd64 ~arm ~x86"
-MYOPTIONS=""
+MYOPTIONS="parts: binaries documentation"
 
 DEPENDENCIES=""
 
 DEFAULT_SRC_CONFIGURE_PARAMS=(
     ac_cv_libsigsegv=no # Do not link against libsigsegv
 )
+
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=( BACKLOG )
+
+src_prepare() {
+    default
+
+    # TODO(compnerd) do this properly with autotools
+    edo sed -e '/^AR = /c AR = @host@-ar'  \
+            -i "${WORK}/lib/Makefile.in"    \
+            -i "${WORK}/tests/Makefile.in"
+}
+
+src_install() {
+    default
+
+    expart binaries /usr/$(exhost --target)/bin
+    expart documentation /usr/share/{doc,info,man}
+}
+
+pkg_postinst() {
+    if [[ $(readlink -f "${ROOT##/}"/usr/bin) == ${ROOT##/}/usr/bin ]] ; then
+        nonfatal edo ln -sf ../${CHOST}/bin/m4 "${ROOT}"/usr/bin/m4 ||
+            eerror "Copying /usr/bin/m4 failed"
+    fi
+}
 

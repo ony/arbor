@@ -13,7 +13,7 @@ fi
 
 require alternatives
 
-export_exlib_phases src_test_expensive src_install
+export_exlib_phases src_install
 
 SUMMARY="Tool used to automatically generate Makefile.in files"
 HOMEPAGE+=" http://sources.redhat.com/automake/"
@@ -43,10 +43,6 @@ WORK="${WORKBASE}/${MY_PNV}"
 
 DEFAULT_SRC_CONFIGURE_PARAMS=( --program-suffix=${SUFFIX} )
 
-automake_src_test_expensive() {
-    emake check
-}
-
 AUTOMAKE_VERSIONED_TOOLS=(
     automake
     aclocal
@@ -55,12 +51,14 @@ AUTOMAKE_VERSIONED_TOOLS=(
 automake_src_install() {
     default
 
-    dodir /usr/libexec/automake-wrapper
+    target=$(exhost --target)
+
+    dodir /usr/${target}/libexec/automake-wrapper
     local tool
     for tool in "${AUTOMAKE_VERSIONED_TOOLS[@]}"; do
-        edo rm "${IMAGE}"/usr/bin/${tool}${SUFFIX}-${APIVERSION}
+        edo rm "${IMAGE}"/usr/${target}/bin/${tool}${SUFFIX}-${APIVERSION}
         # Provide a SLOT-based symlink for automake-wrapper
-        dosym /usr/bin/${tool}${SUFFIX} /usr/libexec/automake-wrapper/${tool}-${SLOT}
+        dosym /usr/${target}/bin/${tool}${SUFFIX} /usr/${target}/libexec/automake-wrapper/${tool}-${SLOT}
     done
 
     edo cd "${IMAGE}"/usr/share/info
