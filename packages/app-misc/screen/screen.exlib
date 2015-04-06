@@ -38,8 +38,8 @@ screen_src_install() {
     newins etc/etcscreenrc screenrc
 
     if ! option 'setuid'; then
-        edo chown root:utmp "${IMAGE}"/usr/bin/${PN}
-        edo chmod 2755 "${IMAGE}"/usr/bin/${PN}
+        edo chown root:utmp "${IMAGE}"/usr/$(exhost --target)/bin/${PN}
+        edo chmod 2755 "${IMAGE}"/usr/$(exhost --target)/bin/${PN}
     fi
 
     pamd_mimic_system screen auth auth
