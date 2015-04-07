@@ -54,7 +54,7 @@ DEPENDENCIES="
 # Prevent Makefiles from running "qmake"; run "eqmake" instead in src_configure
 DEFAULT_SRC_COMPILE_PARAMS=( QMAKE=true )
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=( LANGUAGE.HOWTO )
-DEFAULT_SRC_INSTALL_PARAMS=( MAN1DIR="share/man/man1" )
+DEFAULT_SRC_INSTALL_PARAMS=( MAN1DIR="../share/man/man1" )
 
 DOXYGEN_DOC_DIR="/usr/share/doc/${PNVR}"
 
