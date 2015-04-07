@@ -1,7 +1,7 @@
 # Copyright 2008, 2011 Ingmar Vanhassel <ingmar@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 
-require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 ] ] easy-multibuild
+require autotools [ supported_autoconf=[ 2.5 ] supported_automake=[ 1.13 ] ]
 
 SUMMARY="A C library that performs DNS requests and name resolves asynchronously"
 DESCRIPTION='
@@ -16,12 +16,10 @@ UPSTREAM_CHANGELOG="http://github.com/bagder/c-ares/blob/master/CHANGES"
 LICENCES="MIT"
 SLOT="0"
 PLATFORMS="~amd64 ~x86"
-MYOPTIONS="debug
-multibuild_c: 32 64"
+MYOPTIONS="debug"
 
 DEPENDENCIES=""
 
-DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}"/${PNV}-multilib.patch )
 DEFAULT_SRC_CONFIGURE_PARAMS=( --enable-shared )
 DEFAULT_SRC_CONFIGURE_OPTION_ENABLES=( debug )
 
