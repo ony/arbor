@@ -50,6 +50,8 @@ libgomp_src_unpack() {
 libgomp_src_install() {
     default
 
+    nonfatal edo rmdir "${IMAGE}"/usr/$(exhost --target)/lib/gcc/$(exhost --target)/${PV}/finclude
+
     symlink_dynamic_libs ${PN}
     slot_dynamic_libs ${PN}
     slot_other_libs ${PN}.{a,la,spec}
