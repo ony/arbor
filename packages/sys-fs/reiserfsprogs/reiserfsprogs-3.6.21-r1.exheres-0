@@ -16,8 +16,8 @@ DEFAULT_SRC_CONFIGURE_PARAMS=( --prefix=/ )
 src_install() {
     default
 
-    dosym /sbin/mkreiserfs /sbin/mkfs.reiserfs
-    dosym /sbin/reiserfsck /sbin/fsck.reiserfs
+    dosym mkreiserfs "/usr/$(exhost --target)/bin/mkfs.reiserfs"
+    dosym reiserfsck "/usr/$(exhost --target)/bin/fsck.reiserfs"
     dosym /usr/share/man/man8/mkreiserfs.8 /usr/share/man/man8/mkfs.reiserfs.8
     dosym /usr/share/man/man8/reiserfsck.8 /usr/share/man/man8/fsck.reiserfs.8
 }
