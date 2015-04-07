@@ -36,14 +36,14 @@ jpeg_src_install() {
 
     for (( i = 0; i < ${#libraries[@]}; i++ )); do
         edo mv "${IMAGE}"/usr/${host}/lib/${libraries[i]} "${IMAGE}"/usr/${host}/lib/${libraries[i+1]}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/lib/${libraries[i]} ${libraries[++i]}
+        alternatives_for _${host}_${PN} ${SLOT} ${SLOT} /usr/${host}/lib/${libraries[i]} ${libraries[++i]}
     done
 
     # Rename to allow slotting with alternatives light
     edo pushd "${IMAGE}"/usr/${host}/bin
     for binary in * ; do
         edo mv "${IMAGE}"/usr/${host}/bin/${binary}{,${SLOT}}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/bin/${binary} ${binary}${SLOT}
+        alternatives_for _${host}_${PN} ${SLOT} ${SLOT} /usr/${host}/bin/${binary} ${binary}${SLOT}
     done
     edo popd
 
@@ -53,7 +53,7 @@ jpeg_src_install() {
     edo pushd "${IMAGE}"/usr/${host}/include
     for header in *.h ; do
         edo mv "${IMAGE}"/usr/${host}/include/${header} "${IMAGE}"/usr/${host}/include/libjpeg${SLOT}/${header}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/include/${header} libjpeg${SLOT}/${header}
+        alternatives_for _${host}_${PN} ${SLOT} ${SLOT} /usr/${host}/include/${header} libjpeg${SLOT}/${header}
     done
     edo popd
 

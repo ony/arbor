@@ -69,7 +69,7 @@ libpng_src_install() {
     # Do the actual work
     for (( i = 0; i < ${#libraries[@]}; i++ )); do
         edo rm "${IMAGE}"/usr/${host}/lib/${libraries[i]}
-        alternatives_for _libpng ${SLOT} ${SLOT} /usr/${host}/lib/${libraries[i]} ${libraries[++i]}
+        alternatives_for _${host}_libpng ${SLOT} ${SLOT} /usr/${host}/lib/${libraries[i]} ${libraries[++i]}
     done
 
     for (( i = 0; i < ${#man_pages[@]}; i++ )); do
@@ -79,12 +79,12 @@ libpng_src_install() {
 
     for (( i = 0; i < ${#headers[@]}; i++ )); do
         edo rm "${IMAGE}"/usr/${host}/include/${headers[i]}
-        alternatives_for _libpng ${SLOT} ${SLOT} /usr/${host}/include/${headers[i]} /usr/${host}/include/${headers[++i]}
+        alternatives_for _${host}_libpng ${SLOT} ${SLOT} /usr/${host}/include/${headers[i]} /usr/${host}/include/${headers[++i]}
     done
 
     for (( i = 0; i < ${#binaries[@]}; i++ )); do
         edo rm "${IMAGE}"/usr/${host}/bin/${binaries[i]}
-        alternatives_for _libpng ${SLOT} ${SLOT} /usr/${host}/bin/${binaries[i]}  /usr/${host}/bin/${binaries[++i]}
+        alternatives_for _${host}_libpng ${SLOT} ${SLOT} /usr/${host}/bin/${binaries[i]}  /usr/${host}/bin/${binaries[++i]}
     done
 }
 

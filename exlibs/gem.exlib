@@ -97,7 +97,7 @@ gem_install_abi() {
     edo ${GEM} install "${gem}" --local "${myconf[@]}"
 
     if [[ -d ${IMAGE}/${vendor_gem_dir}/bin ]]; then
-        local alternatives=( _${PN} ${abi} ${abi} ) path exe
+        local alternatives=( _$(exhost --target)_${PN} ${abi} ${abi} ) path exe
         dodir /usr/$(exhost --target)/bin
         edo pushd "${IMAGE}"
         for path in ${vendor_gem_dir#/}/bin/* ; do

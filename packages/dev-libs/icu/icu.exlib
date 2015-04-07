@@ -32,13 +32,13 @@ icu_src_install() {
     edo pushd "${IMAGE}"/usr/${host}/lib
     for library in *.so ; do
         edo mv "${IMAGE}"/usr/${host}/lib/{${library},${library:0:-3}${SLOT}.so}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/lib/${library} ${library:0:-3}${SLOT}.so
+        alternatives_for _${host}_${PN} ${SLOT} ${SLOT} /usr/${host}/lib/${library} ${library:0:-3}${SLOT}.so
     done
 
     edo pushd pkgconfig
     for pc_file in *.pc ; do
         edo mv "${IMAGE}"/usr/${host}/lib/pkgconfig/{${pc_file},${pc_file:0:-3}${SLOT}.pc}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/lib/pkgconfig/${pc_file} ${pc_file:0:-3}${SLOT}.pc
+        alternatives_for _${host}_${PN} ${SLOT} ${SLOT} /usr/${host}/lib/pkgconfig/${pc_file} ${pc_file:0:-3}${SLOT}.pc
     done
     edo popd
     edo popd
@@ -47,14 +47,14 @@ icu_src_install() {
     edo pushd "${IMAGE}"/usr/${host}/bin
     for binary in * ; do
         edo mv "${IMAGE}"/usr/${host}/bin/${binary}{,${SLOT}}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/bin/${binary} ${binary}${SLOT}
+        alternatives_for _${host}_${PN} ${SLOT} ${SLOT} /usr/${host}/bin/${binary} ${binary}${SLOT}
     done
     edo popd
 
     edo pushd "${IMAGE}"/usr/${host}/include
     for header in * ; do
         edo mv "${IMAGE}"/usr/${host}/include/${header}{,${SLOT}}
-        alternatives_for _${PN} ${SLOT} ${SLOT} /usr/${host}/include/${header} ${header}${SLOT}
+        alternatives_for _${host}_${PN} ${SLOT} ${SLOT} /usr/${host}/include/${header} ${header}${SLOT}
     done
     edo popd
 

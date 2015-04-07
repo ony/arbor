@@ -58,7 +58,7 @@ cloog_src_install() {
     )
 
     # ... and use alternatives light to get appropriate symlinks
-    alternatives=( _cloog ${SLOT} ${SLOT}
+    alternatives=( _${host}_cloog ${SLOT} ${SLOT}
         /usr/${host}/include/cloog cloog-${SLOT}
         /usr/${host}/lib/pkgconfig/cloog-isl.pc cloog-isl-${SLOT}.pc
     )

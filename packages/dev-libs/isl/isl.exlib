@@ -43,7 +43,7 @@ isl_src_install() {
     )
 
     # ... and use alternatives light to get appropriate symlinks
-    alternatives=( _isl ${SLOT} ${SLOT}
+    alternatives=( _${host}_isl ${SLOT} ${SLOT}
         /usr/${host}/include/isl isl-${SLOT}
         /usr/${host}/lib/pkgconfig/isl.pc isl-${SLOT}.pc
     )
