@@ -47,6 +47,9 @@ libquadmath_src_unpack() {
     edo sed -e "s,toolexecdir=no,toolexecdir='\${libdir}',"         \
             -e "s,toolexeclibdir=no,toolexeclibdir='\${libdir}',"   \
             -i "${ECONF_SOURCE}/configure"
+
+    edo sed -e "/libsubincludedir =/clibsubincludedir = /usr/$(exhost --build)/lib/gcc/\$(target_alias)/\$(gcc_version)/include"    \
+            -i "${ECONF_SOURCE}/Makefile.in"
 }
 
 libquadmath_src_install() {
