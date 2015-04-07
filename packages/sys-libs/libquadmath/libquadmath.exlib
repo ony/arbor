@@ -58,6 +58,9 @@ libquadmath_src_install() {
     symlink_dynamic_libs ${PN}
     slot_dynamic_libs ${PN}
     slot_other_libs ${PN}.a ${PN}.la
+
+    alternatives_for _${PN} ${SLOT} ${SLOT} \
+        /usr/share/info/${PN}.info ${PN}-${SLOT}.info
 }
 
 export_exlib_phases src_unpack src_install
