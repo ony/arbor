@@ -70,6 +70,7 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
     --with-external-zlib
     --with-rsh=ssh
     --hates=docdir
+    --hates=datarootdir
 )
 DEFAULT_SRC_CONFIGURE_OPTION_ENABLES=( pam )
 
