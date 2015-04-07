@@ -47,7 +47,7 @@ DEFAULT_SRC_PREPARE_PATCHES=(
     -p2 "${FILES}/${PNV}-fontconfig-underlinking.patch"
 )
 
-configure_one_multibuild() {
+src_configure() {
     econf \
         --hates=docdir \
         --enable-threads \
