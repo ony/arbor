@@ -55,6 +55,7 @@ libgfortran_src_install() {
 
     symlink_dynamic_libs ${PN}
     slot_dynamic_libs ${PN}
+    slot_other_libs ${PN}.a ${PN}.la ${PN}.spec
 }
 
 export_exlib_phases src_unpack src_install
