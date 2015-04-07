@@ -3,7 +3,7 @@
 # Based in part upon 'rasqal-0.9.15.ebuild' from Gentoo, which is:
 #     Copyright 1999-2008 Gentoo Foundation.
 
-export_exlib_phases src_configure
+export_exlib_phases src_prepare src_configure
 
 SUMMARY="Library that handles Resource Description Framework (RDF)"
 HOMEPAGE="http://librdf.org/${PN}"
@@ -34,6 +34,12 @@ DEPENDENCIES="
         !gmp? ( dev-libs/mpfr:=[>=2.4.0] )
         pcre? ( dev-libs/pcre[>=3.9] )
 "
+
+rasqal_src_prepare() {
+    default
+
+    edo sed -e "s:pkg-config:${PKG_CONFIG}:" -i src/rasqal-config.in
+}
 
 rasqal_src_configure() {
     econf \
