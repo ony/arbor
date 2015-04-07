@@ -2,6 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 require gnu [ suffix=bz2 subdir=gcc-${PV} pn=gcc ]
+require toolchain-runtime-libraries
 
 if [[ ${PV} == *_pre* ]] ; then
     DOWNLOADS="ftp://gcc.gnu.org/pub/gcc/snapshots/$(ever range 1-2)-${PV##*_pre}/gcc-$(ever range 1-2)-${PV##*_pre}.tar.bz2"
@@ -46,5 +47,16 @@ libgomp_src_unpack() {
     mkdir -p "${WORK}"
 }
 
-export_exlib_phases src_unpack
+libgomp_src_install() {
+    default
+
+    symlink_dynamic_libs ${PN}
+    slot_dynamic_libs ${PN}
+    slot_other_libs ${PN}.{a,la,spec}
+
+    alternatives_for _${PN} ${SLOT} ${SLOT} \
+        /usr/share/info/${PN}.info ${PN}-${SLOT}.info
+}
+
+export_exlib_phases src_unpack src_install
 
