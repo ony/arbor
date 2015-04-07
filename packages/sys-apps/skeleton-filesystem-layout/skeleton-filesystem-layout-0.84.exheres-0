@@ -4,7 +4,7 @@
 
 require multibuild
 
-BASE_TARBALL_PV="0.6"
+BASE_TARBALL_PV="0.7"
 SUMMARY="Skeleton filesystem layout"
 HOMEPAGE="http://www.exherbo.org/"
 DOWNLOADS="http://dev.exherbo.org/distfiles/${PN}/${PN}-base-etc-${BASE_TARBALL_PV}.tar.xz"
