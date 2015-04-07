@@ -11,7 +11,7 @@ MY_PNVR=gcc-${PVR}
 require alternatives versionator
 require gnu [ suffix=bz2 subdir=${MY_PNV} ]
 
-export_exlib_phases src_unpack src_prepare src_configure src_compile src_test_expensive src_install \
+export_exlib_phases src_unpack src_prepare src_configure src_compile src_install \
     pkg_postinst pkg_prerm pkg_postrm
 
 SUMMARY="GNU Compiler Collection"
@@ -34,11 +34,6 @@ DEPENDENCIES="
         dev-libs/gmp:=[>=4.2]
         dev-libs/mpc:=[>=0.8.1]
         dev-libs/mpfr:=[>=2.4.0]
-    test-expensive:
-        dev-util/dejagnu
-        sys-devel/autogen
-        dev-libs/mpc:=[>=0.8.1]
-        dev-libs/mpfr:=[>=2.3]
     build+run:
         sys-devel/binutils[>=2.20.1] [[ note = [ minimal version of binutils for LTO ] ]]
 "
@@ -133,10 +128,6 @@ legacy-gcc_src_compile() {
     # the subconfigures receive the parameter.  Unfortunately, the default configure phases seem to
     # lose this value
     gcc_cv_libc_provides_ssp=yes default
-}
-
-legacy-gcc_src_test_expensive() {
-    emake check
 }
 
 __gcc_slot_shared_data() {
