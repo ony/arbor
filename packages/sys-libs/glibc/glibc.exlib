@@ -109,7 +109,7 @@ glibc_pkg_setup() {
     filter-flags -flto
 
     # NOTE(compnerd) use -fuse-ld to specify the linker if available
-    if ever at_least 5.0 $(gcc-version) ; then
+    if ever at_least 4.8 $(gcc-version) ; then
         filter-flags -fuse-ld*
         append-flags '-fuse-ld=bfd'
     fi
@@ -153,7 +153,7 @@ EOF
 
     # NOTE(compnerd) explicitly use the BFD linker as suggested by upstream, preferring to use
     # -fuse-ld if available
-    if ! ever at_least 5.0 $(gcc-version) ; then
+    if ! ever at_least 4.8 $(gcc-version) ; then
         cat >> "${WORKBASE}/build/config.cache" <<- EOF
 ac_cv_prog_LD=/usr/${build}/${target}/bin/ld.bfd
 libc_cv_prog_ld_gnu=yes
