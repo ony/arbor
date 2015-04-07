@@ -42,7 +42,7 @@ src_compile() {
 }
 
 src_install() {
-    exeinto /usr/$(exhost --target)/sbin
+    exeinto /usr/$(exhost --target)/bin
     doexe src/killall5
     doman man/killall5.8
 }
