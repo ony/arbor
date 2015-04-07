@@ -1,7 +1,0 @@
-if(${CMAKE_C_SIZEOF_DATA_PTR} EQUAL 4)
-    include(/usr/share/llvm/cmake/_LLVMExports-none-32.cmake)
-elseif(${CMAKE_C_SIZEOF_DATA_PTR} EQUAL 8)
-    include(/usr/share/llvm/cmake/_LLVMExports-none-64.cmake)
-else()
-    message(FATAL_ERROR, "Unknown value of CMAKE_C_SIZEOF_DATA_PTR: '${CMAKE_C_SIZEOF_DATA_PTR}'")
-endif()

@@ -20,9 +20,9 @@ else
 fi
 
 # Not checked against an older version of python
-require cmake [ api=2 ] distutils [ has_lib=true has_bin=true python_dep=2.7 ] easy-multibuild
+require cmake [ api=2 ] distutils [ has_lib=true has_bin=true python_dep=2.7 ]
 
-export_exlib_phases src_prepare src_compile src_install
+export_exlib_phases src_prepare src_configure src_compile src_install
 
 SUMMARY="The LLVM Compiler Infrastructure"
 HOMEPAGE="http://llvm.org/"
@@ -32,7 +32,6 @@ SLOT="0"
 MYOPTIONS="
     asserts [[ description = [ Enable assertions ] ]]
     shared-libs [[ description = [ Build libraries dynamically ] ]]
-    multibuild_c: 32 64
 "
 
 DEPENDENCIES="
@@ -52,37 +51,11 @@ llvm_src_prepare() {
 
     expatch "${FILES}"/${PN}-fix-llvm-config.patch
 
-    if ever at_least scm ; then
-        # expect some tests to fail for everything except the default class
-        local xfail_line="" target
-        for target in ${MULTIBUILD_C_TARGETS} ; do
-            if ! multibuild_default_target C ${target}; then
-                xfail_line+=",$(multibuild_get_var C ${target} CHOST)"
-            fi
-        done
-        if [[ -n "${xfail_line}" ]]; then
-            xfail_line="XFAIL: ${xfail_line#,}"
-            local file
-            # gold tests won't work since our system ld isn't multibuilt
-            for file in test/tools/gold/*.ll ; do
-                edo sed \
-                    -e "1 i\\; ${xfail_line}" \
-                    -i "${file}"
-            done
-        fi
-    else
-        expatch "${FILES}"/llvm-config-path-v3.patch
-    fi
-
-    if ever at_least 3.4 && ! ever at_least 3.5; then
-        expatch "${FILES}"/llvm-config-path-3.4.patch
-    fi
-
     default
     edo popd
 }
 
-configure_one_multibuild() {
+llvm_src_configure() {
     # the jit tests segfault when a i686 build is built with the
     # wrong LLVM_DEFAULT_TARGET_TRIPLE which happens on x86_64
 
@@ -94,7 +67,6 @@ configure_one_multibuild() {
         -DLLVM_DEFAULT_TARGET_TRIPLE:STRING=${CHOST}
         -DLLVM_ENABLE_ASSERTIONS:BOOL=$(option asserts TRUE FALSE)
         -DLLVM_INCLUDE_TESTS:BOOL=TRUE
-        -DLLVM_LIBDIR_SUFFIX:STRING=${LIBDIR#lib}
         -DSUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG:BOOL=NO
     )
 
@@ -102,34 +74,27 @@ configure_one_multibuild() {
 }
 
 llvm_src_compile() {
-    easy-multibuild_run_phase
+    default
 
     edo pushd "${CMAKE_SOURCE}"/utils/lit
     distutils_src_compile
     edo popd
 }
 
-install_one_multibuild() {
+llvm_src_install() {
     cmake_src_install
 
-    # Keep one copy of llvm-config and the config include files for each target
-    edo mv "${IMAGE}"/usr/include/llvm/Config/llvm-config{,-${MULTIBUILD_TARGET}}.h
-    edo mv "${IMAGE}"/usr/share/llvm/cmake/LLVMConfig{,-${MULTIBUILD_TARGET}}.cmake
-    # rename with a leading _, as cmake insists on deleting LLVMExports-*.cmake when installing for
-    # the next target
-    edo mv "${IMAGE}"/usr/share/llvm/cmake/{LLVMExports-none,_LLVMExports-none-${MULTIBUILD_TARGET}}.cmake
-
     # prefix the llvm gtest copy so it doesn't clash with the system one
-    edo mkdir "${IMAGE}"/usr/${LIBDIR}/llvm
+    edo mkdir "${IMAGE}"/usr/$(exhost --target)/lib/llvm
 
     local lib
-    for lib in "${IMAGE}"/usr/${LIBDIR}/libgtest* ; do
-        lib=${lib#${IMAGE}/usr/${LIBDIR}/}
+    for lib in "${IMAGE}"/usr/$(exhost --target)/lib/libgtest* ; do
+        lib=${lib#${IMAGE}/usr/$(exhost --target)/lib/}
 
-        edo mv "${IMAGE}"/usr/${LIBDIR}/{,llvm/}${lib}
+        edo mv "${IMAGE}"/usr/$(exhost --target)/lib/{,llvm/}${lib}
         edo sed \
-            -e "s:${LIBDIR}/${lib}:${LIBDIR}/llvm/${lib}:g" \
-            -i "${IMAGE}"/usr/share/llvm/cmake/_LLVMExports-none-${MULTIBUILD_TARGET}.cmake
+            -e "s:$(exhost --target)/lib/${lib}:$(exhost --target)/lib/llvm/${lib}:g" \
+            -i "${IMAGE}"/usr/$(exhost --target)/share/llvm/cmake/LLVMExports-none.cmake
     done
 
     # Use our system copy of llvm-lit instead of expecting the llvm sources to be present in the
@@ -137,29 +102,16 @@ install_one_multibuild() {
     # NOTE: patching this before this point breaks compilation, so don't try it
     edo sed \
         -e 's:set (LIT_COMMAND .*):find_program(LIT_COMMAND llvm-lit):' \
-        -i "${IMAGE}"/usr/share/llvm/cmake/AddLLVM.cmake
-
-    # this makes e.g. mesa automatically pick up the right llvm-config
-    edo mv "${IMAGE}"/usr/bin/{,${CHOST}-}llvm-config
-    multibuild_default_target C && dosym ${CHOST}-llvm-config /usr/bin/llvm-config
+        -i "${IMAGE}"/usr/$(exhost --target)/share/llvm/cmake/AddLLVM.cmake
 
     # Make sure e.g. clang will not look for tools in the build directory
     edo sed \
-        -e 's:^set(LLVM_TOOLS_BINARY_DIR .*)$:set(LLVM_TOOLS_BINARY_DIR /usr/bin):' \
-        -i "${IMAGE}"/usr/share/llvm/cmake/LLVMConfig-${MULTIBUILD_TARGET}.cmake
+        -e 's:^set(LLVM_TOOLS_BINARY_DIR .*)$:set(LLVM_TOOLS_BINARY_DIR /usr/'"$(exhost --target)"'/bin):' \
+        -i "${IMAGE}"/usr/$(exhost --target)/share/llvm/cmake/LLVMConfig.cmake
 
     # Required by the clang test suite
-    exeinto /usr/libexec/llvm
+    exeinto /usr/$(exhost --target)/libexec/llvm
     doexe bin/FileCheck bin/not bin/count
-}
-
-llvm_src_install() {
-    easy-multibuild_run_phase
-
-    insinto /usr/include/llvm/Config
-    doins "${FILES}"/llvm-config.h
-    insinto /usr/share/llvm/cmake
-    doins "${FILES}"/{LLVMConfig.cmake,LLVMExports-none.cmake}
 
     edo pushd "${CMAKE_SOURCE}"/utils/lit
     distutils_src_install
@@ -167,6 +119,10 @@ llvm_src_install() {
 
     # Replace the automatically installed ugly version with the clean version from
     # utils/lit
-    edo mv "${IMAGE}"/usr/bin/{lit,llvm-lit}
+    edo mv "${IMAGE}"/usr/$(exhost --target)/bin/{lit,llvm-lit}
+
+    # Only CMAKE_INSTALL_PREFIX seem to affect these, and that has to be /usr/host
+    edo mv "${IMAGE}"/usr/$(exhost --target)/share/llvm "${IMAGE}"/usr/share
+    edo rmdir "${IMAGE}"/usr/$(exhost --target)/share
 }
 
