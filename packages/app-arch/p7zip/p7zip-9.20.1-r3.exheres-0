@@ -29,7 +29,7 @@ src_prepare() {
             -e "/ALLFLAGS/s:-s ::" \
             -e "/^CC/s:\$(ALLFLAGS):${CFLAGS} \$(ALLFLAGS):g" \
             -e "/^CXX/s:\$(ALLFLAGS):${CXXFLAGS} \$(ALLFLAGS):g" \
-            -e "/^DEST_SHARE/s:lib/:${LIBDIR}/:" \
+            -e "/^DEST_SHARE/s:lib/:$(exhost --target)/lib/:" \
             -e "/^DEST_SHARE_DOC/s:${PN}:${PNVR}:" \
             -e "/^DEST_MAN/s:man:share/&:" \
             -i makefile*
@@ -49,10 +49,11 @@ src_install() {
 
     herebin 7z <<EOF
 #!/bin/bash
-exec /usr/${LIBDIR}/${PN}/\${0##*/} "\${@}"
+exec /usr/$(exhost --target)/lib/${PN}/\${0##*/} "\${@}"
 EOF
-    dosym /usr/bin/7z /usr/bin/7za
-    dosym /usr/bin/7z /usr/bin/7zr
+    dosym 7z /usr/$(exhost --target)/bin/7za
+    dosym 7z /usr/$(exhost --target)/bin/7zr
+    edo rm -rf "${IMAGE}usr/bin"
 
     edo find "${IMAGE}" -type f -iname "*License*" -o -iname "*copying*" -delete
 }
