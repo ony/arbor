@@ -23,5 +23,5 @@ DEPENDENCIES="
 # valgrind is needed for the tests and breaks them...
 RESTRICT="test"
 
-DEFAULT_SRC_INSTALL_PARAMS=( PREFIX=/usr/$(exhost --target) )
+DEFAULT_SRC_INSTALL_PARAMS=( PREFIX=/usr/$(exhost --target) MANDIR=/usr/share/man/man1 )
 
