@@ -186,8 +186,8 @@ ecmake() {
         -DCMAKE_INSTALL_PREFIX:PATH="${PREFIX:=/usr/$(exhost --target)}"
         -DCMAKE_SYSTEM_PREFIX_PATH:PATH="${PREFIX:=/usr/$(exhost --target)}"
         -DCMAKE_INSTALL_LIBDIR:STRING='lib'
-        -DCMAKE_INSTALL_DATADIR=/usr/share/
-        -DCMAKE_INSTALL_FULL_DATADIR=/usr/share/
+        -DCMAKE_INSTALL_DATAROOTDIR=/usr/share/
+        -DCMAKE_INSTALL_FULL_DATAROOTDIR=/usr/share/
     )
 
     local cmake_api
