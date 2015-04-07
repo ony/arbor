@@ -23,5 +23,5 @@ DEPENDENCIES="
         media-libs/jpeg:=
         media-libs/libpng:="
 
-DEFAULT_SRC_CONFIGURE_PARAMS=( --hates=docdir )
+DEFAULT_SRC_CONFIGURE_PARAMS=( --hates=docdir --hates=datarootdir )
 
