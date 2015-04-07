@@ -50,7 +50,7 @@ libatomic_src_install() {
 
     symlink_dynamic_libs ${PN}
     slot_dynamic_libs ${PN}
-    slot_static_libs ${PN}
+    slot_other_libs ${PN}.{a,la}
 }
 
 export_exlib_phases src_unpack src_prepare src_install

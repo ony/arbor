@@ -75,7 +75,7 @@ libstdc++_src_install() {
 
     symlink_dynamic_libs ${PN}
     slot_dynamic_libs ${PN}
-    slot_static_libs ${PN} libsupc++
+    slot_other_libs {${PN},libsupc++}.{a,la}
 
     edo pushd "${IMAGE}"
 

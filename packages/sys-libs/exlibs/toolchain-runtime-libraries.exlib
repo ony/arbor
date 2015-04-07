@@ -16,7 +16,6 @@ require alternatives
 # Assuming libfoo.so.1.0.0 and libfoo.so.1.1.0 are installed using this exlib, it ensures that both
 # stay available and libfoo.so as well as libfoo.so.1 point to the newest applicable version.
 # if libfoo.so.2{,.0.0} is added, the others stay around, but libfoo.so will point to libfoo.so.2
-#
 symlink_dynamic_libs() {
     local names=()
     local name target_so provider_so
@@ -81,29 +80,25 @@ slot_dynamic_libs() {
     edo popd
 }
 
-# argument: at least one library name (without the .la or .a)
+# argument: at least one library name with extension
 #
-# convenience function to slot static libraries with the given name in ${IMAGE}, using
-# alternatives-light and the ${SLOT} as provider and priority
-slot_static_libs() {
-    local names=() alternatives=() extensions=( a la )
-    local name ext
+# convenience function to slot static libraries and other files in ${libdir} with
+# the given name in ${IMAGE}, usingg alternatives-light and the ${SLOT} as provider and priority
+slot_other_libs() {
+    local files=()
+    local file ext name
 
     [[ ${#} -lt 1 ]] && die "${FUNCNAME} takes at least 1 argument"
 
-    names=( "${@}" )
+    files=( "${@}" )
 
-    for name in "${names[@]}"; do
-        alternatives=()
-        for ext in "${extensions[@]}"; do
-            [[ -e "${IMAGE}/usr/$(exhost --target)/lib/${name}.${ext}" || \
-               -e "${IMAGE}/usr/$(exhost --target)/lib/${name}-${SLOT}.${ext}" ]] && \
-                alternatives+=(
-                    "/usr/$(exhost --target)/lib/${name}.${ext}" "${name}-${SLOT}.${ext}"
-                )
-        done
-
-       [[ ${#alternatives[@]} -gt 0 ]] && alternatives_for "_$(exhost --target)_${name}" "${SLOT}" "${SLOT}" "${alternatives[@]}"
+    for file in "${files[@]}"; do
+        ext=${file##*.}
+        name=${file%.${ext}}
+        [[ -e "${IMAGE}/usr/$(exhost --target)/lib/${name}.${ext}" || \
+           -e "${IMAGE}/usr/$(exhost --target)/lib/${name}-${SLOT}.${ext}" ]] && \
+            alternatives_for "_$(exhost --target)_${name}" "${SLOT}" "${SLOT}" \
+                "/usr/$(exhost --target)/lib/${name}.${ext}" "${name}-${SLOT}.${ext}"
     done
 }
 
