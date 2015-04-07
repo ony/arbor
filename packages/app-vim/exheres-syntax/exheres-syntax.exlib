@@ -3,8 +3,6 @@
 
 require vim-plugin
 
-export_exlib_phases src_compile
-
 SUMMARY="Vim plugin: Exheres packages and exlibs"
 HOMEPAGE="http://www.exherbo.org/"
 DOWNLOADS="http://dev.exherbo.org/distfiles/exheres-syntax/${PNV}.tar.bz2"
@@ -14,9 +12,4 @@ SLOT="0"
 
 VIM_PLUGIN_HELPFILES="exheres-syntax"
 VIM_PLUGIN_MESSAGES="filetype"
-
-exheres-syntax_src_compile() {
-    # has a Makefile containing various targets, but none that we want
-    :
-}
 
