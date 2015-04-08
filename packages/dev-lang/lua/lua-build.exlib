@@ -52,7 +52,7 @@ lua-build_src_prepare() {
 
     # The trailing slashes are needed
     edo sed -e "s:/usr/local/:/usr/$(exhost --target)/:" \
-            -e 's:LUA_ROOT "share/lua/":"/usr/share/lua/":' \
+            -e 's:LUA_ROOT "share/lua/:"/usr/share/lua/:' \
             -i src/luaconf.h
 
     default
