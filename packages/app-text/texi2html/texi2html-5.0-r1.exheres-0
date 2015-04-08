@@ -31,6 +31,13 @@ DEFAULT_SRC_CONFIGURE_PARAMS=(
     --with-unidecode
 )
 
+src_prepare() {
+    default
+
+    # fix shebangs
+    edo sed -e 's:^#!.*:#!/usr/bin/env perl:' -i *.pl
+}
+
 src_test() {
     pushd test
     emake -j1 check long-check
