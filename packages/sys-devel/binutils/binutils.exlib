@@ -39,21 +39,6 @@ DEPENDENCIES="
 
 ECONF_SOURCE="${WORK}"
 
-DEFAULT_SRC_CONFIGURE_PARAMS=(
-    --enable-install-libiberty
-    --enable-plugins
-    --enable-shared
-    --enable-threads
-    --disable-static
-    --disable-werror
-    # Install gold as ld.gold, ld as ld.bfd
-    --enable-ld
-    --enable-gold
-    --enable-lto
-    # Strip out broken static link flags, https://gcc.gnu.org/PR56750
-    --without-stage1-ldflags
-)
-
 binutils_src_unpack() {
     default
     edo mkdir "${WORK}"
@@ -89,19 +74,22 @@ binutils_src_configure() {
 
         edo mkdir -p "${WORKBASE}/build/${target}"
         edo cd "${WORKBASE}/build/${target}"
-        econf                                           \
-            --target=${target}                          \
-            --disable-werror                            \
-            --enable-gold                               \
-            --enable-ld                                 \
-            --enable-lto                                \
-            --enable-plugins                            \
-            --enable-shared                             \
-            --enable-threads                            \
-            --with-lib-path=${libpath}                  \
-            $(if test x"${target}" = x"${host}" ; then
-                echo --program-prefix=${host}-
-              fi)
+        local myconf=(
+            --target=${target}
+            --disable-werror
+            --enable-install-libiberty
+            --enable-gold
+            --enable-ld
+            --enable-lto
+            --enable-plugins
+            --enable-shared
+            --enable-threads
+            --with-lib-path=${libpath}
+        )
+
+        [[ "${target}" == "${host}" ]] && myconf+=( --program-prefix=${host}- )
+
+        econf "${myconf[@]}"
     done
 }
 
