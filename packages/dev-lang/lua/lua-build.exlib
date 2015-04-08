@@ -43,6 +43,9 @@ lua-build_src_prepare() {
         edo cp "${FILES}"/${PN}-${SLOT}.pc etc
     else
         edo mv etc/{${PN},${PN}-${SLOT}}.pc
+        edo sed -e "/^INSTALL_MAN/s:= .*:=/usr/share/man/man1:" \
+                -e "/^INSTALL_LMOD/s:= .*:=/usr/share/lua/${SLOT}:" \
+                -i etc/${PN}-${SLOT}.pc
     fi
 
     edo sed -e "/^prefix/s:/.*$:/usr/$(exhost --target):" \
