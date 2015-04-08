@@ -107,34 +107,52 @@ git-googlecode_src_prepare() {
 # No option: mozsha1/ppcsha1
 # TODO Check whether we want NO_CROSS_DIRECTORY_HARDLINKS wrt pbins
 git-googlecode_src_configure() {
-    myoptions+=" NO_GETTEXT=YesPlease"
-    option curl || myoptions+=" NO_CURL=YesPlease"
-    option python || myoptions+=" NO_PYTHON=YesPlease"
-    option tk || myoptions+=" NO_TCLTK=YesPlease"
-    option webdav || myoptions+=" NO_EXPAT=YesPlease"
+    # Note(tanderson): Run perlinfo here to set ${VENDOR_LIB} for INSTALLSITELIB;
+    # Really, this is used in src_{compile,install} but set it here so we don't
+    # have to modify 'myoptions' later.
+    perlinfo
+    myoptions=(
+        'NO_GETTEXT=YesPlease'
+        DESTDIR="${IMAGE}"
+        CFLAGS="${CFLAGS} -Wall"
+        LDFLAGS="${LDFLAGS}"
+        CC="${CC}"
+        AR="${AR}"
+        INSTALLSITELIB="${VENDOR_LIB}"
+        PKG_CONFIG="${PKG_CONFIG}"
+        PERL_PATH=/usr/$(exhost --build)/bin/perl
+        PYTHON_PATH="${PYTHON}"
+    )
+    option curl || myoptions+=( 'NO_CURL=YesPlease' )
+    option python || myoptions+=( 'NO_PYTHON=YesPlease' )
+    option tk || myoptions+=( 'NO_TCLTK=YesPlease' )
+    option webdav || myoptions+=( 'NO_EXPAT=YesPlease' )
+
+    # Note(tanderson): Yes, this is correct; we need to run *both* configure
+    # and make with these options. Before multiarch we only did the emake call,
+    # but this is actually now needed since we need to set both --exec-prefix
+    # and --prefix for the perl man pages and tcl scripts. Without the configure
+    # script we cannot set --exec-prefix since that is not exposed through the
+    # resulting Makefile but instead generated here by configure.
+    emake configure
+    edo ./configure \
+        --exec-prefix=/usr/$(exhost --target) \
+        --prefix=/usr \
+        --with-perl=/usr/$(exhost --build)/bin/perl \
+        --with-python="${PYTHON}" \
+        "${myoptions[@]}"
 }
 
 myemake() {
     emake \
-        DESTDIR="${IMAGE}" \
-        prefix=/usr/$(exhost --target) \
         gitexecdir=/usr/$(exhost --target)/libexec/${PN} \
         gitwebdir=/usr/share/gitweb \
         template_dir=/usr/share/${PN}/templates \
-        INSTALLSITELIB=${VENDOR_LIB} \
-        CFLAGS="${CFLAGS} -Wall" \
-        LDFLAGS="${LDFLAGS}" \
-        CC="${CC}" \
-        AR="${AR}" \
-        PKG_CONFIG="${PKG_CONFIG}" \
-        PERL_PATH=/usr/$(exhost --build)/bin/perl \
-        PYTHON_PATH="${PYTHON}" \
-        ${myoptions} \
+        "${myoptions[@]}" \
         "${@}"
 }
 
 git-googlecode_src_compile() {
-    perlinfo
     myemake V=1 all
     elisp-optional_src_compile
     option keyring && myemake -C contrib/credential/gnome-keyring
@@ -181,9 +199,13 @@ git-googlecode_src_install() {
     docinto /gitweb/
     dodoc gitweb/{INSTALL,README}
 
-    fixlocalpod
-    edo find "${IMAGE}/usr/$(exhost --target)/lib/perl5" -type f -name .packlist -delete
-    edo find "${IMAGE}/usr/$(exhost --target)/lib/perl5" -type d -empty -delete
+    # Note(tanderson): Now that we set exec_prefix != prefix, the perl modules are
+    # installed correctly, but these two files are not. They are not in any of
+    # the directories checked by fixlocalpod, so delete manually; also delete
+    # the (hopefully) empty directory usr/lib.
+    edo find "${IMAGE}/usr/lib/perl5" -type f -name perllocal.pod -delete
+    edo find "${IMAGE}/usr/lib/perl5" -type f -name .packlist -delete
+    edo find "${IMAGE}/usr/lib/" -type d -empty -delete
 
     if option baselayout ; then
         newinitd "${FILES}"/git-daemon.initd git-daemon
