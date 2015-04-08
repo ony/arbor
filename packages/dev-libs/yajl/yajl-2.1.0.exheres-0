@@ -18,6 +18,8 @@ DEPENDENCIES="
         doc? ( app-doc/doxygen )
 "
 
+DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}"/${PN}-archindep-files.patch )
+
 src_compile() {
     default
     if option doc ; then

@@ -1,0 +1,26 @@
+From b03b7fa08d263cf7b1283a061b949085916a9db5 Mon Sep 17 00:00:00 2001
+From: Thomas Anderson <tanderson@caltech.edu>
+Date: Wed, 8 Apr 2015 14:26:19 -0700
+Subject: [PATCH] Install pkg-config files correctly.
+Upstream: Submitted pull request https://github.com/lloyd/yajl/pull/158
+
+Typically the pkg-config files should go into lib/ and be
+prefix-prepended so that cross-compiling works as expected. This
+change makes installed .pc files consistent with most other packages.
+---
+ src/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 99cf9e9..cf91af0 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -84,4 +84,4 @@ INSTALL(TARGETS yajl
+ INSTALL(TARGETS yajl_s ARCHIVE DESTINATION lib${LIB_SUFFIX})
+ INSTALL(FILES ${PUB_HDRS} DESTINATION include/yajl)
+ INSTALL(FILES ${incDir}/yajl_version.h DESTINATION include/yajl)
+-INSTALL(FILES ${shareDir}/yajl.pc DESTINATION share/pkgconfig)
++INSTALL(FILES ${shareDir}/yajl.pc DESTINATION lib${LIB_SUFFIX}/pkgconfig)
+-- 
+2.3.3
+
