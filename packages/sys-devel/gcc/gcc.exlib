@@ -15,11 +15,16 @@ CROSS_COMPILE_TARGETS="
 "
 MYOPTIONS="
     ( targets: ${CROSS_COMPILE_TARGETS} )
-    threads [[ description = [ build with threading support; requires target libc ] ]]
+    graphite [[ description = [ enable support for Graphite based loop optimizations ] ]]
+    threads  [[ description = [ build with threading support; requires target libc ] ]]
 "
 
 DEPENDENCIES="
     build+run:
+        graphite? (
+            dev-libs/cloog:=[>=0.17&<0.19]
+            dev-libs/isl:=[>=0.10&<0.13]
+        )
         !sys-devel/static-gcc [[
             description = [ static-gcc was moved back to gcc. ]
             resolution = uninstall-blocked-after
@@ -133,6 +138,7 @@ EOF
                 --enable-languages=c,c++,fortran,objc,obj-c++ \
                 --with-sysroot='""'                         \
                 --with-gxx-include-dir="${gxx_incdir}"      \
+                $(option_with graphite cloog)               \
                 $(optionq threads || echo --with-newlib)    \
                 $(optionq threads || echo --without-headers)\
                 $(if [[ ${target} == ${CHOST} ]] ; then
