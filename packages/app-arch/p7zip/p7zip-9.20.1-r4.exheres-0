@@ -20,24 +20,40 @@ DEPENDENCIES="
 WORK="${WORKBASE}/${MY_PNV}"
 
 DEFAULT_SRC_COMPILE_PARAMS=( all3 )
-DEFAULT_SRC_INSTALL_PARAMS=( DEST_HOME="${IMAGE}/usr" )
+DEFAULT_SRC_INSTALL_PARAMS=( DEST_DIR="${IMAGE}" DEST_HOME="/usr/$(exhost --target)" )
 
 src_prepare() {
+    local makefile
+
+    case "$(exhost --target)" in
+    x86_64-pc-linux-gnu)
+        makefile=linux_amd64_asm
+        ;;
+    i686-pc-linux-gnu)
+        makefile=linux_x86_asm_gcc_4.X
+        ;;
+    arm-exherbo-linux-gnueabi)
+        makefile=linux_cross_arm
+        ;;
+    *)
+        die "Target platform is not supported"
+        ;;
+    esac
+
+    edo cp -f makefile.${makefile} makefile.machine
+
     edo sed -e "s:-m32 ::g" \
             -e "s:-m64 ::g" \
             -e "/^OPTFLAGS/s:-O::" \
             -e "/ALLFLAGS/s:-s ::" \
-            -e "/^CC/s:\$(ALLFLAGS):${CFLAGS} \$(ALLFLAGS):g" \
-            -e "/^CXX/s:\$(ALLFLAGS):${CXXFLAGS} \$(ALLFLAGS):g" \
+            -e "s:^CC=[^ ]\+\? \(.*\):CC=$(exhost --tool-prefix)gcc ${CFLAGS} \1:" \
+            -e "s:^CXX=[^ ]\+\? \(.*\):CXX=$(exhost --tool-prefix)g++ ${CXXFLAGS} \1:" \
             -e "/^DEST_SHARE/s:lib/:$(exhost --target)/lib/:" \
             -e "/^DEST_SHARE_DOC/s:${PN}:${PNVR}:" \
             -e "/^DEST_MAN/s:man:share/&:" \
-            -i makefile*
+            -i makefile.machine
 
     edo sed -i -e "/strip/d" install.sh
-
-    option platform:amd64 && edo cp -f makefile.linux_amd64_asm makefile.machine
-    option platform:x86 && edo cp -f makefile.linux_x86_asm_gcc_4.X makefile.machine
 }
 
 src_test() {
