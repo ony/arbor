@@ -23,10 +23,10 @@ configure_string() {
 }
 
 src_prepare() {
-    edo sed -e "s/^\(CC =\) .*/\1 ${CC}/" \
-            -e "s/^\(CPP =\) .*/\1 ${CPP}/" \
-            -e "/^CFLAGS_NOOPT = /s/$/ ${CFLAGS}/" \
-            -e "/^LFLAGS2 = /s/$/ ${LDFLAGS}/" \
+    edo sed -e "s:^\(CC =\) .*:\1 ${CC}:" \
+            -e "s:^\(CPP =\) .*:\1 ${CPP}:" \
+            -e "/^CFLAGS_NOOPT = /s:$: ${CFLAGS}:" \
+            -e "/^LFLAGS2 = /s:$: ${LDFLAGS}:" \
             -i unix/Makefile
 }
 
