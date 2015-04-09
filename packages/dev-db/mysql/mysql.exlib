@@ -108,7 +108,7 @@ mysql_src_configure() {
         # Empty value to not install the mysql-test directory
         -DINSTALL_MYSQLTESTDIR:STRING=
         -DINSTALL_PLUGINDIR:PATH=lib/mysql/plugin
-        -DINSTALL_SBINDIR:PATH=sbin
+        -DINSTALL_SBINDIR:PATH=bin
         -DINSTALL_SCRIPTDIR:PATH=bin
         -DINSTALL_SHAREDIR:PATH=/usr/share
         # Empty value to not install the sql-bench directory
