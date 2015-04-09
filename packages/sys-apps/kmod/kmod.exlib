@@ -53,12 +53,14 @@ DEFAULT_SRC_CONFIGURE_OPTION_WITHS=(
     "bash-completion bashcompletiondir /usr/share/bash-completion/completions"
 )
 
+DEFAULT_SRC_TEST_PARAMS=( CC="$CC" LD="$LD" AR="$AR" )
+
 AT_M4DIR=( m4 )
 
 kmod_src_test() {
     if [[ -d /lib/modules/$(uname -r)/build ]]; then
         edo mkdir -p testsuite
-        emake -j1 check
+        emake -j1 "${DEFAULT_SRC_TEST_PARAMS[@]}" check
     else
         ewarn "Skipping tests. No kernel tree at /lib/modules/$(uname -r)/build"
     fi
