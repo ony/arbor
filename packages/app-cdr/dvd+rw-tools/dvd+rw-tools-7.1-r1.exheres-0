@@ -21,7 +21,11 @@ DEPENDENCIES="
 "
 
 DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}/${PNV}-INT_MAX.patch" )
-DEFAULT_SRC_INSTALL_PARAMS=( prefix="${IMAGE}/usr" )
+DEFAULT_SRC_COMPILE_PARAMS=( CC="${CC}" CXX="${CXX}" )
+DEFAULT_SRC_INSTALL_PARAMS=(
+    prefix="${IMAGE}/usr/$(exhost --target)"
+    manprefix="${IMAGE}/usr/share"
+)
 DEFAULT_SRC_INSTALL_EXTRA_DOCS=( index.html )
 
 src_prepare() {
