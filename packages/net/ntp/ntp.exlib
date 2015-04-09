@@ -68,7 +68,7 @@ ntp_src_install() {
 
     default
 
-    dodir /usr/sbin
+    dodir /usr/${host}/sbin
     edo mv "${IMAGE}"/usr/${host}/bin/{ntpd,ntpdate} "${IMAGE}"/usr/${host}/sbin/
 
     doman "${WORKBASE}"/man/*.[58]
