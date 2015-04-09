@@ -74,6 +74,9 @@ DEFAULT_SRC_PREPARE_PATCHES=(
 
 subversion_src_prepare() {
     default
+
+    edo sed -e '/AC_PATH_PROG(PKG_CONFIG/d' -i configure.ac
+
     eautoconf # Doesn't use automake
 }
 
