@@ -14,6 +14,11 @@ filtering interface that should be familiar to, and easily adopted by applicatio
 LICENCES="LGPL-2.1"
 SLOT="0"
 PLATFORMS="~amd64 ~x86"
+MYOPTIONS=""
 
-DEFAULT_SRC_COMPILE_PARAMS=( V=1 )
+DEFAULT_SRC_COMPILE_PARAMS=( V=1 GCC="${CC}" )
+
+DEFAULT_SRC_INSTALL_PARAMS=(
+    INSTALL_MAN_DIR="${IMAGE}"/usr/share/man
+)
 

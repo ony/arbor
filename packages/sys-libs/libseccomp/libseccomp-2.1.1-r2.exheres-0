@@ -14,13 +14,17 @@ filtering interface that should be familiar to, and easily adopted by applicatio
 LICENCES="LGPL-2.1"
 SLOT="0"
 PLATFORMS="~amd64 ~x86"
+MYOPTIONS=""
 
 DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}"/${PN}-Allow-user-to-override-objdump.patch )
-MYOPTIONS=""
 
 DEFAULT_SRC_COMPILE_PARAMS=( V=1
     # The Makefile claims that libseccomp requires gcc-specific functionality, so it looks for the
     # compiler in the GCC environment variable. However, it seems to work fine with clang...
     GCC="${CC}"
+)
+
+DEFAULT_SRC_INSTALL_PARAMS=(
+    INSTALL_MAN_DIR="${IMAGE}"/usr/share/man
 )
 
