@@ -207,6 +207,10 @@ systemd_src_prepare() {
         edo sed -i -e "/man page index/ a AC_DEFUN([AM_PATH_LIBGCRYPT],/bin/false)" configure.ac
     fi
 
+    # Architecture independent factory files shouldn't go into $(prefix)/
+    edo sed -i -e '/factory_etcdir/s:$(prefix):/usr:' Makefile.am
+    edo sed -i -e '/factory_pamdir/s:$(prefix):/usr:' Makefile.am
+
     # Paludis really hates the progress bar so let's disable it.
     edo sed -i -e "/journal_file_verify/s:true:false:" src/journal/test-journal-verify.c
 
