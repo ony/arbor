@@ -46,9 +46,9 @@ WORK=${WORKBASE}/${PN}-$(ever range 1-2)
 DEFAULT_SRC_COMPILE_PARAMS=(
     -j1
     GMAKE_NOWARN=true
-    INS_BASE=/usr
-    LDPATH="-L/\$(INS_BASE)/${LIBDIR}"
-    RUNPATH="-R/\$(INS_BASE)/${LIBDIR}"
+    INS_BASE=/usr/$(exhost --target)
+    LDPATH="-L/\$(INS_BASE)/lib"
+    RUNPATH="-R/\$(INS_BASE)/lib"
 )
 DEFAULT_SRC_TEST_PARAMS=( GMAKE_NOWARN=true )
 DEFAULT_SRC_INSTALL_PARAMS=(
@@ -63,6 +63,24 @@ src_prepare() {
             -i autoconf/configure{,.in}
     fi
 
+    edo pushd RULES
+    edo sed -e "/cc-config.sh/s|\$(C_ARCH:%64=%) \$(CCOM_DEF)|${CC} ${CC}|" \
+            -i rules1.top
+
+    edo sed -e "/^CC_COM_DEF=/s|gcc|${CC}|" \
+            -e "/^CC++_COM_DEF=/s|g++|${CXX}|" \
+            -e "/COPTOPT=/s|-O||" \
+            -e 's|$(GCCOPTOPT)||' \
+            -i cc-gcc.rul
+
+    edo sed -e "s|^#\(CONFFLAGS +=\).*|\1\t-cc=${CC}|" \
+            -i rules.cnf
+
+    edo sed -e "/^AR=/s/ar/$(exhost --tool-prefix)&/" \
+            -e 's:/bin/::' \
+            -i rules.prg
+    edo popd
+
     default
 }
 
@@ -72,11 +90,15 @@ src_configure() {
 }
 
 src_install() {
+    local host=$(exhost --target)
+
     default
 
-    if [[ ${LIBDIR} != lib ]]; then
-        edo mv "${IMAGE}"/usr/{lib,${LIBDIR}}
-    fi
+    # TODO: find out a way to install correctly in the first place
+    dodir /usr/${host}/
+    edo mv "${IMAGE}"/usr/sbin/* "${IMAGE}"/usr/bin/
+    edo rmdir "${IMAGE}"/usr/sbin
+    edo mv "${IMAGE}"/usr/{bin,include,lib}/ "${IMAGE}"/usr/${host}/
 
     # Don't install man-pages that are related to the buildsystem
     edo rm "${IMAGE}"/usr/share/man/man5/make{files,rules}.5
