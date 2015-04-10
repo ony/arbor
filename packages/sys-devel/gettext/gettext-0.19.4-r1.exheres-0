@@ -16,10 +16,9 @@ MYOPTIONS="
 "
 
 DEPENDENCIES="
-    build:
-        sys-devel/gcc:*[openmp?]
     build+run:
         dev-libs/libxml2:2.0
+        sys-libs/libgomp:=
         sys-libs/ncurses
         acl? ( sys-apps/acl )
 "
