@@ -65,6 +65,9 @@ src_prepare() {
 
     edo sed -i "s/^#CBCP=y/CBCP=y/" pppd/Makefile.linux
 
+    edo sed -e "s:/usr/include:/usr/$(exhost --target)/include:" \
+            -i pppd/Makefile.linux
+
     if option radius ; then
         # set the right paths in radiusclient.conf
         edo sed -e "s:/usr/local/etc:/etc:" \
