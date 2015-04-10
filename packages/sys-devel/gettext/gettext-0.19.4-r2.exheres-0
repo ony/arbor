@@ -18,9 +18,9 @@ MYOPTIONS="
 DEPENDENCIES="
     build+run:
         dev-libs/libxml2:2.0
-        sys-libs/libgomp:=
         sys-libs/ncurses
         acl? ( sys-apps/acl )
+        openmp? ( sys-libs/libgomp:= )
 "
 
 DEFAULT_SRC_PREPARE_PATCHES=( "${FILES}"/${PN}-0.18-sydbox.patch )
