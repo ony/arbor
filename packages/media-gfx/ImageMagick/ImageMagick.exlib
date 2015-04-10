@@ -70,7 +70,7 @@ DEPENDENCIES="
         lcms? ( media-libs/lcms2 )
         lqr? ( media-libs/liblqr:1[>=0.1.0] )
         openexr? ( media-libs/openexr[>=1.0.6] )
-        openmp? ( sys-devel/gcc:*[openmp?] )
+        openmp? ( sys-libs/libgomp:= )
         pango? ( x11-libs/pango[>=1.28.1] )
         perl? ( dev-lang/perl:=[>=5.8.6] )
         postscript? ( app-text/ghostscript )
