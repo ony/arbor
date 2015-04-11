@@ -49,6 +49,9 @@ llvm_src_prepare() {
     # Fix the use of dot
     edo sed -e 's/@DOT@//g' -i docs/doxygen.cfg.in
 
+    # This tests fails if gcc is not in path
+    edo sed -e "s/bugpoint/\0 --gcc ${CC}/" -i test/BugPoint/compile-custom.ll
+
     expatch "${FILES}"/${PN}-fix-llvm-config.patch
 
     default
