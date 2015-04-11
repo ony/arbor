@@ -64,7 +64,7 @@ DEPENDENCIES="
         )
         jpeg2000? ( media-libs/jasper )
         lcms? ( media-libs/lcms2 )
-        openmp? ( sys-devel/gcc:*[openmp?] )
+        openmp? ( sys-libs/libgomp:= )
         tiff? ( media-libs/tiff[>=3.5.5] )
         truetype? (
             fonts/corefonts
