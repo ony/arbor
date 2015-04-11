@@ -15,3 +15,7 @@ DEPENDENCIES="
         virtual/pkg-config
 "
 
+src_prepare() {
+    edo sed -i -e "s/pkg-config/$(exhost --tool-prefix)pkg-config/" Makefile.PL lib/ExtUtils/PkgConfig.pm
+}
+
