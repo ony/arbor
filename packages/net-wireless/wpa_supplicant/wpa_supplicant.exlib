@@ -114,6 +114,10 @@ config_enable_eap() {
 }
 
 wpa_supplicant_src_prepare() {
+    pushd "${WORKBASE}/${PNV}" >/dev/null 2>&1
+    expatch "${FILES}/wpa_supplicant-2.3-nl80211-includes.patch"
+    popd >/dev/null 2>&1
+
     default
 
     # FILES is a reserved exheres-0 variable

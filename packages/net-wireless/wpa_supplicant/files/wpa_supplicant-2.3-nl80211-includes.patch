@@ -1,0 +1,19 @@
+Author: Saleem Abdulrasool <compnerd@compnerd.org>
+Upstream: No
+Reason: permit building nl80211 driver with headers and libraries installed to
+non-standard search locations (i.e. not /usr/local or /usr).
+-- 
+--- wpa_supplicant-2.3/src/drivers/drivers.mak	2015-04-10 20:34:50.307119694 -0700
++++ wpa_supplicant-2.3/src/drivers/drivers.mak	2015-04-10 20:35:20.731118720 -0700
+@@ -33,9 +33,9 @@
+ NEED_RFKILL=y
+ 
+ ifdef CONFIG_LIBNL32
+-  DRV_LIBS += -lnl-3
++  DRV_LIBS += $(shell $(PKG_CONFIG) --libs libnl-3.0)
+   DRV_LIBS += -lnl-genl-3
+-  DRV_CFLAGS += -DCONFIG_LIBNL20 -I/usr/include/libnl3
++  DRV_CFLAGS += -DCONFIG_LIBNL20 $(shell $(PKG_CONFIG) --cflags libnl-3.0)
+ ifdef CONFIG_LIBNL3_ROUTE
+   DRV_LIBS += -lnl-route-3
+   DRV_CFLAGS += -DCONFIG_LIBNL3_ROUTE
