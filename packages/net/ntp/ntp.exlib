@@ -68,9 +68,6 @@ ntp_src_install() {
 
     default
 
-    dodir /usr/${host}/sbin
-    edo mv "${IMAGE}"/usr/${host}/bin/{ntpd,ntpdate} "${IMAGE}"/usr/${host}/sbin/
-
     doman "${WORKBASE}"/man/*.[58]
     insinto /usr/share/doc/${PNVR}/
     doins -r html/
@@ -116,7 +113,7 @@ EOF
 
     edo find "${IMAGE}"/usr/ -type d -empty -delete
 
-    alternatives_for ntpd ${PN} 1 /usr/${host}/sbin/ntpd ${PN}-ntpd
+    alternatives_for ntpd ${PN} 1 /usr/${host}/bin/ntpd ${PN}-ntpd
     alternatives_for ntpd ${PN} 1 /usr/share/man/man8/ntpd.8 ${PN}-ntpd
 }
 
