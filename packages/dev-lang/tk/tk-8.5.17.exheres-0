@@ -50,6 +50,7 @@ DEFAULT_SRC_PREPARE_PATCHES=(
 src_configure() {
     econf \
         --hates=docdir \
+        --hates=datarootdir \
         --enable-threads \
         --with-tcl=/usr/$(exhost --target)/lib \
         $(option_enable debug symbols) \
