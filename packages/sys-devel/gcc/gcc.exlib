@@ -64,7 +64,9 @@ gcc_src_configure() {
         local libpath=/usr/${target}/lib
         local gxx_incdir=/usr/${target}/include/c++/${PV}
         local target_cflags_var=${target//-/_}_CFLAGS
+        local target_cflags_var=${target//-/_}_CXXFLAGS
         local target_ldflags_var=${target//-/_}_LDFLAGS
+        local tool_prefix=$(exhost --tool-prefix)
 
         if option !targets:${target} ; then
             echo "    Cross-Compile Target: ${target} (disabled)"
@@ -76,25 +78,14 @@ gcc_src_configure() {
         edo mkdir -p "${WORKBASE}/build/${target}"
         edo cd "${WORKBASE}/build/${target}"
 
-        # NOTE(compnerd) we pass gcc_cv_objdump as we are using an out of tree binutils, and the
-        # default will not prefix the target as necessary.
-        # NOTE(compnerd) GNU libc v2.4+ provide SSP; however, the check for it is based upon a grep
-        # of features.h which is inaccessible to us at this point.  Inform the compiler we will be
-        # running against GNU libc v2.4+
-        cat > config.cache <<- EOF
-gcc_cv_objdump=${target}-objdump
-gcc_cv_libc_provides_ssp=yes
-EOF
-
-        # NOTE(compnerd) unlike the standard compiler, we do not pass CXXFLAGS_FOR_TARGET here.
-        # This is a bare compiler, supporting only C and does not rely on the system.  The only
-        # thing that is really included in this compiler is the compiler, driver, preprocessor,
-        # and a static version of libgcc which is required to build libc from scratch.  The one
-        # thing that this compiler depends on is the host's copy of zlib to minimise the build.
         edo env                                             \
             AR=${CHOST}-ar                                  \
             RANLIB=${CHOST}-ranlib                          \
+            AS_FOR_TARGET=${tool_prefix}as                  \
+            NM_FOR_TARGET=${tool_prefix}nm                  \
+            OBJDUMP_FOR_TARGET=${tool_prefix}objdump        \
             CFLAGS_FOR_TARGET="${!target_cflags_var}"       \
+            CXXFLAGS_FOR_TARGET="${!target_cxxflags_var}"   \
             LDFLAGS_FOR_TARGET="${!target_ldflags_var}"     \
         "${WORKBASE}/${PNV}/configure"         \
                 --cache-file=config.cache                   \
@@ -150,6 +141,7 @@ EOF
                 --with-as=/usr/${CHOST}/bin/${target}-as    \
                 --with-ld=/usr/${CHOST}/bin/${target}-ld    \
                 --with-system-zlib                          \
+                --with-glibc-version=2.11                   \
                 --with-multilib-list=
     done
 }
@@ -167,10 +159,7 @@ gcc_src_compile() {
 
         edo cd "${WORKBASE}/build/${target}"
 
-        # NOTE(compnerd) pass gcc_cv_objdump through the environment to allow the sub-configures to
-        # receive the correct value; we also must pass gcc_cv_libc_provides_ssp to ensure that it is
-        # received by the sub-configures.
-        gcc_cv_libc_provides_ssp=yes gcc_cv_objdump=${target}-objdump default
+        gcc_cv_readelf="/usr/$(exhost --build)/bin/${tool_prefix}readelf" default
     done
 }
 
@@ -208,6 +197,8 @@ gcc_src_install() {
         for tool in usr/"${CHOST}"/bin/${target}-*-${SLOT}; do
             alternatives+=( /"${tool%-${SLOT}}" "${tool##*/}" )
         done
+        # NOTE(compnerd) add an additional alternative for cc
+        alternatives+=( "/usr/${CHOST}/bin/${target}-cc" "${target}-gcc-${SLOT}" )
         for man in usr/share/man/man*/*.*; do
             local ext=${man##*.}
             # some are already slotted due to --program-suffix, some aren't
