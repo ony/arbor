@@ -15,10 +15,9 @@ MYOPTIONS=""
 DEPENDENCIES=""
 
 DEFAULT_SRC_COMPILE_PARAMS=( CC="${CC}" )
-
-src_prepare() {
-    edo sed -e '/^prefix/s:/usr/local:/usr:' \
-           -e "/^docdir/s:${PN}:${PNVR}:" \
-           -i Makefile
-}
+DEFAULT_SRC_INSTALL_PARAMS=(
+    prefix=/usr
+    sbindir=/usr/$(exhost --target)/bin
+    docdir=/usr/share/doc/${PNVR}
+)
 
