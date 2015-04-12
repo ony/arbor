@@ -156,7 +156,7 @@ ImageMagick_src_install() {
     default
 
     if option perl; then
-        local perllocal=( "${IMAGE}"/usr/${LIBDIR}/perl5/*/*/perllocal.pod )
+        local perllocal=( "${IMAGE}"/usr/$(exhost --target)/lib/perl5/*/*/perllocal.pod )
         edo rm "${perllocal[0]}"
         edo rmdir "${perllocal[0]%/*}"
         edo rmdir "${perllocal[0]%/*/*}"
