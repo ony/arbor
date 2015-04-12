@@ -32,11 +32,12 @@ WORK="${WORKBASE}/gcc-${PV/_p?(re)/-}/build"
 
 # TODO(compnerd) find a way to expose build tools when cross-compiling and replace
 # {AR,RANLIB}_FOR_BUILD accordingly
-# TODO(compnerd) use cc rather than gcc for CC_FOR_TARGET
 DEFAULT_SRC_CONFIGURE_PARAMS=( AR_FOR_BUILD=$(exhost --build)-ar
                                CC_FOR_BUILD=$(exhost --build)-gcc
                                RANLIB_FOR_BUILD=$(exhost --build)-ranlib
-                               CC_FOR_TARGET=$(exhost --tool-prefix)gcc
+                               AS_FOR_TARGET=$(exhost --tool-prefix)as
+                               CC_FOR_TARGET=$(exhost --tool-prefix)cc
+                               LD_FOR_TARGET=$(exhost --tool-prefix)ld
                                --disable-bootstrap
                                --disable-multilib --with-multilib-list='' --enable-languages=c
                                --disable-fixincludes
@@ -78,6 +79,9 @@ libgcc_src_compile() {
     edo cd "${WORK}/gcc"
         CC=$(exhost --build)-gcc                \
         CXX=$(exhost --build)-g++               \
+        AS_FOR_TARGET=$(exhost --tool-prefix)as \
+        CC_FOR_TARGET=$(exhost --tool-prefix)cc \
+        LD_FOR_TARGET=$(exhost --tool-prefix)ld \
     edo "${ECONF_SOURCE}/gcc/configure"         \
             --host=$(exhost --build)            \
             --build=$(exhost --build)           \
@@ -87,6 +91,7 @@ libgcc_src_compile() {
             --disable-bootstrap                 \
             --disable-multilib                  \
             --with-multilib-list=''             \
+            --with-glibc-version=2.11           \
             --enable-languages=c
     edo sed -e 's,libgcc.mvars:.*$,libgcc.mvars:,' -i Makefile
     edo make libgcc.mvars tconfig.h tm.h options.h insn-constants.h insn-modes.h gcov-iov.h
