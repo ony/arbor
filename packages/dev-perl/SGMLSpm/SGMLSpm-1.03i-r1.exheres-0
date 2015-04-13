@@ -18,7 +18,8 @@ SLOT="0"
 src_prepare() {
     perlinfo
 
-    edo sed -e "/^BINDIR/s:=.*$:= ${IMAGE}/usr/$(exhost --target)/bin/:" \
+    edo sed -e "/^PERL/s:=.*$:= /usr/host/bin/perl:" \
+            -e "/^BINDIR/s:=.*$:= ${IMAGE}/usr/$(exhost --target)/bin/:" \
             -e "/^HTMLDIR/s:=.*$:= ${IMAGE}/usr/share/doc/${PNVR}:" \
             -e "/^PERL5DIR/s:=.*$:= ${IMAGE}/${VENDOR_LIB}:" \
             -e "/^SPECDIR/s:$:/sgmlspl-specs:" \
