@@ -325,7 +325,7 @@ systemd_src_configure() {
 
     edo mkdir -p src/gudev
 
-    EFI_CC=${CC} econf "${myconfig[@]}"
+    econf "${myconfig[@]}"
 }
 
 systemd_src_test() {
